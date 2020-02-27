@@ -2,6 +2,7 @@
 #include <getopt.h>
 #include "constants.hpp"
 #include "UdpServer_linux.hpp"
+#include "utils.hpp"
 
 using std::cout;
 using std::endl;

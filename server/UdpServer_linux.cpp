@@ -10,7 +10,7 @@
 #include "UdpServer_linux.hpp"
 
 UdpServer_linux::UdpServer_linux(int portno) : portno(portno) {
-    struct addrinfo hints;
+    struct addrinfo hints{};
     int status;
 
     memset(&hints, 0, sizeof(hints));
@@ -20,7 +20,7 @@ UdpServer_linux::UdpServer_linux(int portno) : portno(portno) {
 
     std::string portno_string = std::to_string(portno);
     struct addrinfo *servinfo;
-    status = getaddrinfo(NULL, portno_string.c_str(), &hints, &servinfo);
+    status = getaddrinfo(nullptr, portno_string.c_str(), &hints, &servinfo);
     if(status !=0 ){
         std::string exc = "getaddrinfo: ";
         exc.append(gai_strerror(status));
@@ -51,8 +51,6 @@ UdpServer_linux::UdpServer_linux(int portno) : portno(portno) {
     freeaddrinfo(servinfo);
 
     if(nullptr==p) throw std::runtime_error("server: failed to bind");
-
-
 
 
 }
