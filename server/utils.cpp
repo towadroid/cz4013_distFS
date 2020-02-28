@@ -2,14 +2,21 @@
 // Created by towa-ubuntu on 2/27/20.
 //
 
-#include <limits>
-#include <stdexcept>
+#include <cstring>
+#include <sstream> //for stringstream
+#include <fstream> //for ifstream
 #include <iostream>
 #include "utils.hpp"
-#include "globalvar.hpp"
 
-// pack integer with n bits, assuming n % 8 == 0
-// buffer needs to be n/8 bytes long
+/**Packs an integer with n bits.
+ *
+ * Assuming n % 8 == 0. Buffer needs to be n bits long.
+ *
+ * @tparam T type of int
+ * @param n amount of bits
+ * @param[out] buffer where data is stored
+ * @param x integer to pack
+ */
 template<class T>
 void packin(int n, unsigned char *buf, const T x) {
     n -= 8;
@@ -17,6 +24,11 @@ void packin(int n, unsigned char *buf, const T x) {
         *buf = (x >> n); //"x >> n" will be truncated, only lowest byte is stored
         buf++;
     }
+}
+
+
+void utils::packi16(unsigned char *buf, const unsigned short int x) {
+    packin<unsigned short int>(16, buf, x);
 }
 
 void utils::packi32(unsigned char *buf, const unsigned int x) {
@@ -48,6 +60,52 @@ unsigned int utils::unpacku32(unsigned char *buf) {
 signed int utils::unpacki32(unsigned char *buf) {
     return unpackin<signed int>(32, buf);
 }
+
+/** Packs a string into a buffer.
+ *
+ * Buffer should be large enough to hold the string and two additional bytes.
+ *
+ * @param[out] buf pointer to a buffer, first two bytes store the length of str
+ * @param[in] str string to be packed
+ */
+void utils::pack_str(unsigned char *buf, const std::string str) {
+    short int len = str.length(); //returns a value of type size_t
+    //we only use the lower 2 bytes
+    packi16(buf, len);
+    buf += 2;
+    memcpy(buf, str.c_str(), len);
+}
+/**Reads a whole ASCII file into a string.
+ *
+ * See https://stackoverflow.com/a/2602258
+ *
+ * @param path
+ * @param content
+ */
+void utils::read_file_to_string(const std::string path, std::string *content) {
+    std::ifstream in(path);
+    if(!in) throw std::runtime_error("Could not open file. Does file exist?"); //TODO check if file exists
+    std::stringstream buffer;
+    buffer << in.rdbuf();
+    content->assign(buffer.str());
+}
+
+/**Write a string into a file.
+ *
+ * The string is written to the location specified by offset. Offset is used relative to the beginning of the file.
+ *
+ * @param path path of the file
+ * @param offset offset in bytes from the beginning
+ * @param to_insert string to insert
+ * @return 0 if successful
+ */
+int utils::insert_to_file(std::string path, int offset, std::string to_insert) {
+    //TODO implement insert to file
+    return 0;
+}
+
+
+
 
 /*
  *  int a=-20;

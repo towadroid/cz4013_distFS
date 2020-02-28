@@ -1,8 +1,8 @@
 #include <iostream>  //C++ "replacement" for stdio.h not only wrapper like cstdio
 #include <getopt.h>
 #include "constants.hpp"
-#include "UdpServer_linux.hpp"
 #include "utils.hpp"
+#include "globalvar.hpp"
 
 using std::cout;
 using std::endl;
