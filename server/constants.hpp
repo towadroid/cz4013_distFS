@@ -20,6 +20,6 @@ const std::string IEEE754_NONCOMPLIANCE("Not IEC559/IEEE754 compliant, cannot (u
  * The working directory per default is "..."/cz4013_distFS/server/cmake-build-debug
  * Can change by setting "working directory" by editing run configuration
  */
-const std::string FILE_DIR_PATH("../../files/");
+const std::string FILE_DIR_PATH("../filesystem_root/");
 
 #endif //SERVER_CONSTANTS_HPP

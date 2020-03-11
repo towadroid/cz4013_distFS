@@ -12,6 +12,8 @@ using std::endl;
 
 int main(int argc, char **argv) {
     std::string tfile;
-    utils::read_file_to_string("../CMakeLists.txt", &tfile);
+    utils::read_file_to_string(FILE_DIR_PATH+"file1", &tfile);
     cout << tfile;
+
+    utils::insert_to_file(FILE_DIR_PATH+"test_ins","abc",2);
 }

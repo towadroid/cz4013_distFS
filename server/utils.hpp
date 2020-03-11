@@ -34,7 +34,7 @@ namespace  utils{
     void pack_str(unsigned char *buf, std::string str);
 
     void read_file_to_string(std::string path, std::string *content);
-    int insert_to_file(std::string path, int offset, std::string to_insert);
+    int insert_to_file(std::string path, std::string to_insert, int offset);
 }
 
 

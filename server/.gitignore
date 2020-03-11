@@ -1,4 +1,9 @@
- Created by https://www.gitignore.io/api/c++,clion+all
+### Custom ignores ###
+filesystem_root/
+
+# End of custom ignores
+
+# Created by https://www.gitignore.io/api/c++,clion+all
 # Edit at https://www.gitignore.io/?templates=c++,clion+all
 
 ### C++ ###

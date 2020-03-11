@@ -21,7 +21,7 @@ template<class T>
 void packin(int n, unsigned char *buf, const T x) {
     n -= 8;
     for (; n >= 0; n = n - 8) {
-        *buf = (x >> n); //"x >> n" will be truncated, only lowest byte is stored
+        *buf = x >> n; //"x >> n" will be truncated, only lowest byte is stored
         buf++;
     }
 }
@@ -36,7 +36,7 @@ void utils::packi32(unsigned char *buf, const unsigned int x) {
 }
 
 template<class T>
-T unpackun(int n, unsigned char *buf) {
+T unpackun(int n, unsigned char const *buf) {
     T result = 0;
     for (int i = 0; i < n / 8; ++i) {
         result = result | buf[i] << (n - 8 - i * 8);
@@ -75,6 +75,7 @@ void utils::pack_str(unsigned char *buf, const std::string str) {
     buf += 2;
     memcpy(buf, str.c_str(), len);
 }
+
 /**Reads a whole ASCII file into a string.
  *
  * See https://stackoverflow.com/a/2602258
@@ -84,7 +85,7 @@ void utils::pack_str(unsigned char *buf, const std::string str) {
  */
 void utils::read_file_to_string(const std::string path, std::string *content) {
     std::ifstream in(path);
-    if(!in) throw std::runtime_error("Could not open file. Does file exist?"); //TODO check if file exists
+    if(!in.is_open()) throw std::runtime_error("Could not open file. Does file exist?"); //TODO check if file exists
     std::stringstream buffer;
     buffer << in.rdbuf();
     content->assign(buffer.str());
@@ -99,8 +100,18 @@ void utils::read_file_to_string(const std::string path, std::string *content) {
  * @param to_insert string to insert
  * @return 0 if successful
  */
-int utils::insert_to_file(std::string path, int offset, std::string to_insert) {
-    //TODO implement insert to file
+int utils::insert_to_file(std::string path, std::string to_insert, int offset) {
+    std::fstream myfile(path); // std::ios::in | std::ios::out by default
+    if(!myfile.is_open()) throw std::runtime_error("Could not open file. Does file exist?"); //TODO check if file exists
+    //save existing old content after offset first
+    std::stringstream buffer;
+    buffer << myfile.rdbuf();
+    std::string content_after_offset(buffer.str());
+    content_after_offset.erase(0,offset);
+
+    myfile.seekp(offset, std::ios::beg);
+    myfile << to_insert;
+    myfile << content_after_offset;
     return 0;
 }
 
