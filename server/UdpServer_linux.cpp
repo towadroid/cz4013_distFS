@@ -21,7 +21,7 @@ UdpServer_linux::UdpServer_linux(int portno) : portno(portno) {
     std::string portno_string = std::to_string(portno);
     struct addrinfo *servinfo;
     status = getaddrinfo(nullptr, portno_string.c_str(), &hints, &servinfo);
-    if(status !=0 ){
+    if (status != 0) {
         std::string exc = "getaddrinfo: ";
         exc.append(gai_strerror(status));
         throw std::runtime_error(exc);
@@ -29,7 +29,7 @@ UdpServer_linux::UdpServer_linux(int portno) : portno(portno) {
 
     // loop through all the results and bind to the first we can
     struct addrinfo *p;
-    for(p=servinfo; nullptr!=p; p=p->ai_next){
+    for (p = servinfo; nullptr != p; p = p->ai_next) {
         sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
         if (sockfd < 0) {
             perror("server: open socket failed");
@@ -41,7 +41,7 @@ UdpServer_linux::UdpServer_linux(int portno) : portno(portno) {
             perror("setsockopt");
             exit(1);
         }
-        if(bind(sockfd, p->ai_addr, p->ai_addrlen) == -1){
+        if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
             close(sockfd);
             perror("server: bind");
             continue;
@@ -50,12 +50,29 @@ UdpServer_linux::UdpServer_linux(int portno) : portno(portno) {
     }
     freeaddrinfo(servinfo);
 
-    if(nullptr==p) throw std::runtime_error("server: failed to bind");
+    if (nullptr == p) throw std::runtime_error("server: failed to bind");
 
 
 }
 
 UdpServer_linux::~UdpServer_linux() {
-    //TODO close socket
+    close(sockfd);
+}
 
+int UdpServer_linux::receive_msg(unsigned char *buf, struct sockaddr_storage *client_address) {
+    int len = sizeof(*client_address);
+    memset(client_address, 0, len);
+    //TODO fix hardcode 1024
+    socklen_t addr_len; //not used later?
+    int n = recvfrom(sockfd, buf, 1024, MSG_WAITALL, (struct sockaddr *) client_address, &addr_len);
+    if (-1 == n) perror("recvfrom");
+    return n;
+}
+
+void UdpServer_linux::send_msg(unsigned char const *buf, int len, struct sockaddr_storage *client_address) {
+    int n = sendto(sockfd, buf, len, MSG_CONFIRM, (const sockaddr *)client_address, sizeof(*client_address));
+    if (n != len) {
+        if (-1 == n) fprintf(stderr, "");
+        else fprintf(stderr, "Could only send %d bytes out of %d!", n, len);
+    }
 }

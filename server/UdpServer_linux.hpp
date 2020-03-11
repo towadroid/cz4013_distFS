@@ -20,6 +20,8 @@ private:
 public:
     explicit UdpServer_linux(int portno);
     ~UdpServer_linux();
+    int receive_msg(unsigned char *buf, sockaddr_storage *client_address);
+    void send_msg(const unsigned char *buf, int len, sockaddr_storage *client_address);
 };
 
 
