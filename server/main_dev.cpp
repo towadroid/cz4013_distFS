@@ -12,12 +12,12 @@ using std::endl;
 
 void readfile(){
     std::string tfile;
-    utils::read_file_to_string(FILE_DIR_PATH+"file1", &tfile);
+    utils::read_file_to_string(constants::FILE_DIR_PATH+"file1", &tfile);
     cout << tfile;
 }
 
 void insertfile(){
-    utils::insert_to_file(FILE_DIR_PATH+"test_ins","abc",2);
+    utils::insert_to_file(constants::FILE_DIR_PATH+"test_ins","abc",2);
 }
 
 int main(int argc, char **argv) {

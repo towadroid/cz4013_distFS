@@ -9,7 +9,7 @@
 #include <unistd.h> //for close
 #include "UdpServer_linux.hpp"
 
-UdpServer_linux::UdpServer_linux(int portno) : portno(portno) {
+UdpServer_linux::UdpServer_linux(int portno, double failure_rate) : portno(portno), failure_rate(failure_rate) {
     struct addrinfo hints{};
     int status;
 
@@ -72,7 +72,7 @@ int UdpServer_linux::receive_msg(unsigned char *buf, struct sockaddr_storage *cl
 void UdpServer_linux::send_msg(unsigned char const *buf, int len, struct sockaddr_storage *client_address) {
     int n = sendto(sockfd, buf, len, MSG_CONFIRM, (const sockaddr *)client_address, sizeof(*client_address));
     if (n != len) {
-        if (-1 == n) fprintf(stderr, "");
+        if (-1 == n) fprintf(stderr, "send_msg");
         else fprintf(stderr, "Could only send %d bytes out of %d!", n, len);
     }
 }

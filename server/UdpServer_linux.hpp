@@ -12,13 +12,14 @@ class UdpServer_linux {
 private:
     int sockfd; //descriptor for socket
     int portno; //port to listen tog
+    double failure_rate;
 
     struct sockaddr_in server_address;
     // pointer to this can be cast to a pointer to struct sockaddr
 
 
 public:
-    explicit UdpServer_linux(int portno);
+    explicit UdpServer_linux(int portno, double failure_rate  = 0);
     ~UdpServer_linux();
     int receive_msg(unsigned char *buf, sockaddr_storage *client_address);
     void send_msg(const unsigned char *buf, int len, sockaddr_storage *client_address);

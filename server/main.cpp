@@ -2,12 +2,11 @@
 #include <getopt.h>
 #include "constants.hpp"
 #include "utils.hpp"
-#include "globalvar.hpp"
+//#include "globalvar.hpp"
 
 using std::cout;
 using std::endl;
 
-// use static?
 int verbose_flag = 0; //flag set by '--verbose'
 int semantic = 0;
 
@@ -39,8 +38,8 @@ int main(int argc, char **argv) {
             case 0:  //If flag is not a null pointer, flag is set and getopt_long returns 0
                 break;
             case 'a':
-                if ("l" == option_arg) semantic = ATLEAST;
-                else if ("m" == option_arg) semantic = ATMOST;
+                if ("l" == option_arg) semantic = constants::ATLEAST;
+                else if ("m" == option_arg) semantic = constants::ATMOST;
                 else {
                     std::cerr << "[invalid argument] option '-a' (invocation semantics)\n";
                     std::cerr << "    value you provided: " << option_arg << "\n";
