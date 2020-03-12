@@ -59,18 +59,45 @@ UdpServer_linux::~UdpServer_linux() {
     close(sockfd);
 }
 
-int UdpServer_linux::receive_msg(unsigned char *buf, struct sockaddr_storage *client_address) {
-    int len = sizeof(*client_address);
-    memset(client_address, 0, len);
+// logging | #include <arpa/inet.h>
+/*
+// get sockaddr, IPv4 or IPv6:
+void *get_in_addr(struct sockaddr *sa)
+{
+    if (sa->sa_family == AF_INET) {
+        return &(((struct sockaddr_in*)sa)->sin_addr);
+    }
+
+    return &(((struct sockaddr_in6*)sa)->sin6_addr);
+}*/
+
+int UdpServer_linux::receive_msg(unsigned char *buf) {
     //TODO fix hardcode 1024
-    socklen_t addr_len; //not used later?
-    int n = recvfrom(sockfd, buf, 1024, MSG_WAITALL, (struct sockaddr *) client_address, &addr_len);
-    if (-1 == n) perror("recvfrom");
-    return n;
+    socklen_t addr_len = sizeof(client_address); //not used later?
+    int numbytes = recvfrom(sockfd, buf, 1024, MSG_WAITALL, (struct sockaddr *) &client_address, &addr_len);
+    if (-1 == numbytes) perror("recvfrom");
+    /* use for logging
+    char s[INET6_ADDRSTRLEN];
+    printf("listener: got packet from %s\n",
+           inet_ntop(client_address.ss_family,
+                     get_in_addr((struct sockaddr *)&client_address),
+                     s, sizeof s));
+    printf("listener: packet is %d bytes long\n", numbytes);
+    buf[numbytes] = '\0';
+    printf("listener: packet contains \"%s\"\n", buf);*/
+    return numbytes;
 }
 
-void UdpServer_linux::send_msg(unsigned char const *buf, int len, struct sockaddr_storage *client_address) {
-    int n = sendto(sockfd, buf, len, MSG_CONFIRM, (const sockaddr *)client_address, sizeof(*client_address));
+void UdpServer_linux::send_msg(unsigned char const *buf, int len) const {
+    send_msg(buf, len, &client_address);
+}
+
+sockaddr_storage UdpServer_linux::get_client_address() const {
+    return client_address;
+}
+
+void UdpServer_linux::send_msg(const unsigned char *buf, int len, const sockaddr_storage *receiver) const {
+    int n = sendto(sockfd, buf, len, MSG_CONFIRM, (const sockaddr *) receiver, sizeof(*receiver));
     if (n != len) {
         if (-1 == n) fprintf(stderr, "send_msg");
         else fprintf(stderr, "Could only send %d bytes out of %d!", n, len);

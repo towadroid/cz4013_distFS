@@ -85,7 +85,8 @@ void utils::pack_str(unsigned char *buf, const std::string str) {
  */
 void utils::read_file_to_string(const std::string path, std::string *content) {
     std::ifstream in(path);
-    if(!in.is_open()) throw std::runtime_error("Could not open file. Does file exist?"); //TODO check if file exists
+    if(!in.is_open()) throw std::runtime_error("Could not open file. Does file exist?");
+    //TODO check if file exists, probably can use std::filesystem::exists
     std::stringstream buffer;
     buffer << in.rdbuf();
     content->assign(buffer.str());

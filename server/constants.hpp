@@ -6,11 +6,25 @@
 #define SERVER_CONSTANTS_HPP
 
 #include <string>
+#include <unordered_map>
 
-namespace constants{
+namespace constants {
     // invocation semantics
     constexpr int ATLEAST = 0;
     constexpr int ATMOST = 1;
+
+    enum class Service_type : int {
+        not_a_service = 0,
+        register_client,
+        service1,
+        service2
+    };
+
+    const std::unordered_map<int, Service_type> service_codes = {
+            {123, Service_type::register_client},
+            {1,   Service_type::service1},
+            {2,   Service_type::service2}
+    };
 
     constexpr int BACKLOG = 10; // how many pending connections queue will hold
 

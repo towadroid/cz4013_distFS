@@ -14,15 +14,16 @@ private:
     int portno; //port to listen tog
     double failure_rate;
 
-    struct sockaddr_in server_address;
-    // pointer to this can be cast to a pointer to struct sockaddr
+    struct sockaddr_storage client_address{};
 
 
 public:
     explicit UdpServer_linux(int portno, double failure_rate  = 0);
     ~UdpServer_linux();
-    int receive_msg(unsigned char *buf, sockaddr_storage *client_address);
-    void send_msg(const unsigned char *buf, int len, sockaddr_storage *client_address);
+    int receive_msg(unsigned char *buf);
+    void send_msg(const unsigned char *buf, int len) const;
+    void send_msg(const unsigned char *buf, int len, const sockaddr_storage *receiver) const;
+    sockaddr_storage get_client_address() const;
 };
 
 
