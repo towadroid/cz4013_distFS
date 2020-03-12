@@ -8,6 +8,7 @@
 #include "utils.hpp"
 #include "Handler.hpp"
 #include "MonitoringClient.hpp"
+#include "spdlog/spdlog.h"
 /*
 #include <thread>
 #include <chrono>
@@ -35,7 +36,7 @@ void testUdp() {
     printf("Client: %s\n", buffer);
     std::string msg("Hello from server");
     utils::pack_str(buffer, msg);
-    int len = 2 + msg.length();
+    size_t len = 2 + msg.length();
     //std::cout <<  client_address.sin_port;
     serv.send_msg(buffer, len);
 }
@@ -56,4 +57,7 @@ int main(int argc, char **argv) {
     unsigned char buffer[1024];
     Handler h{};
 
+    spdlog::info("Welcome to spdlog!");
+    spdlog::critical("das ist kritisch");
+    spdlog::warn("Easy padding in numbers like {:08d}", 12);
 }
