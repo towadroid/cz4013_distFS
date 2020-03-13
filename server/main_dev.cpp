@@ -3,6 +3,7 @@
 //
 
 #include <iostream>
+#include <gtest/gtest.h>
 #include "constants.hpp"
 #include "UdpServer_linux.hpp"
 #include "utils.hpp"
@@ -58,7 +59,7 @@ void logger() {
     spdlog::critical("das ist kritisch");
 }
 
-int main() {
+int main(int argc, char **argv) {
     spdlog::set_level(spdlog::level::debug);
     //readfile();
     //insertfile();
@@ -70,6 +71,7 @@ int main() {
     buffer[0] = 3;
     buffer[0] = buffer[0];
     Handler h{};
-
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 
 }
