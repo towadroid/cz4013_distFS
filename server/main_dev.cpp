@@ -36,28 +36,40 @@ void testUdp() {
     printf("Client: %s\n", buffer);
     std::string msg("Hello from server");
     utils::pack_str(buffer, msg);
-    size_t len = 2 + msg.length();
+    size_t len = 4 + msg.length();
     //std::cout <<  client_address.sin_port;
     serv.send_msg(buffer, len);
 }
 
-void executeHandler(){
+void executeHandler() {
     UdpServer_linux server(2302);
     unsigned char buffer[1024];
     Handler h{};
     h.service(constants::service_codes.at(1), server, buffer);
 }
 
-int main(int argc, char **argv) {
+void logger() {
+    spdlog::set_level(spdlog::level::trace);
+    spdlog::trace("Trace");
+    spdlog::debug("Debug");
+    spdlog::info("Welcome to spdlog!");
+    spdlog::warn("Easy padding in numbers like {:08d}", 12);
+    spdlog::error("Error");
+    spdlog::critical("das ist kritisch");
+}
+
+int main() {
+    spdlog::set_level(spdlog::level::debug);
     //readfile();
     //insertfile();
     //testUdp();
     //executeHandler();
+    //logger();
     UdpServer_linux server(2302);
     unsigned char buffer[1024];
+    buffer[0] = 3;
+    buffer[0] = buffer[0];
     Handler h{};
 
-    spdlog::info("Welcome to spdlog!");
-    spdlog::critical("das ist kritisch");
-    spdlog::warn("Easy padding in numbers like {:08d}", 12);
+
 }

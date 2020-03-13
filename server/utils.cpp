@@ -6,6 +6,7 @@
 #include <sstream> //for stringstream
 #include <fstream> //for ifstream
 #include <iostream>
+#include <netinet/in.h>
 #include "utils.hpp"
 
 /**Packs an integer with n bits.
@@ -63,17 +64,27 @@ signed int utils::unpacki32(unsigned char *buf) {
 
 /** Packs a string into a buffer.
  *
- * Buffer should be large enough to hold the string and two additional bytes.
+ * Buffer should be large enough to hold the string and four additional bytes.
  *
- * @param[out] buf pointer to a buffer, first two bytes store the length of str
+ * @param[out] buf pointer to a buffer, first four bytes store the length of str
  * @param[in] str string to be packed
  */
-void utils::pack_str(unsigned char *buf, const std::string str) {
+void utils::pack_str(unsigned char *buf, const std::string &str) {
     short int len = str.length(); //returns a value of type size_t
-    //we only use the lower 2 bytes
-    packi16(buf, len);
-    buf += 2;
+    //we only use the lower 4 bytes
+    packi32(buf, len);
+    buf += 4;
     memcpy(buf, str.c_str(), len);
+}
+
+/** Unpacks a string from a given byte array
+ *
+ * @param[in] buf pointer to a buffer, first four bytes indicate length of following string
+ * @return
+ */
+std::string utils::unpack_str(unsigned char *buf) {
+    size_t n = unpacku32(buf);
+    return std::string(reinterpret_cast<const char *>(buf + 4), n);
 }
 
 /**Reads a whole ASCII file into a string.
@@ -116,7 +127,15 @@ int utils::insert_to_file(std::string path, std::string to_insert, int offset) {
     return 0;
 }
 
-
+/** Get sockaddr, IPv4 or IPv6:
+ *
+ * @param sa socketaddr, that contains the address
+ * @return
+ */
+void* utils::get_in_addr(struct sockaddr *sa) {
+    if (sa->sa_family == AF_INET) return &(((struct sockaddr_in*)sa)->sin_addr);
+    return &(((struct sockaddr_in6*)sa)->sin6_addr);
+}
 
 
 /*

@@ -28,18 +28,18 @@ void Handler::service(Service_type service_type, const UdpServer_linux &server, 
     }
 }
 
-void Handler::exec_service(std::integral_constant<constants::Service_type, constants::Service_type::not_a_service> x,
+void Handler::exec_service(std::integral_constant<constants::Service_type, constants::Service_type::not_a_service>,
                            const UdpServer_linux &server, unsigned char *message) {
     fprintf(stderr, "Error in system: Tried to execute the \"not_a_service\" service!");
 }
 
-void Handler::exec_service(std::integral_constant<constants::Service_type, constants::Service_type::service1> x,
+void Handler::exec_service(std::integral_constant<constants::Service_type, constants::Service_type::service1>,
                            const UdpServer_linux &server, unsigned char *message) {
     std::cout << "Service 1 executed" << std::endl;
 }
 
 void
-Handler::exec_service(std::integral_constant<Service_type, Service_type::register_client> x, const UdpServer_linux &server,
+Handler::exec_service(std::integral_constant<Service_type, Service_type::register_client>, const UdpServer_linux &server,
                       unsigned char *message) {
     //TODO extract actual path/filename and monitoring length from message
     std::string filename{"Test"};

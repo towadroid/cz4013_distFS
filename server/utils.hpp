@@ -9,6 +9,7 @@
  * because they are shorter to type :)
  *
  * TODO check for IEEE754 and check for sizes
+ * e.g. size_t <= 4 bytes
  * sizes: https://en.cppreference.com/w/cpp/language/types
  * if(!std::numeric_limits<float>::is_iec559;) throw std::runtime_error(IEEE754_NONCOMPLIANCE);
  */
@@ -24,6 +25,7 @@
  */
 
 #include <string>
+#include <sys/socket.h>
 
 namespace  utils{
     void packi16(unsigned  char *buf, unsigned short int x);
@@ -31,10 +33,13 @@ namespace  utils{
     signed int unpacki32(unsigned char *buf);
     unsigned int unpacku32(unsigned char *buf);
 
-    void pack_str(unsigned char *buf, std::string str);
+    void pack_str(unsigned char *buf, const std::string &str);
+    std::string unpack_str(unsigned char *buf);
 
     void read_file_to_string(std::string path, std::string *content);
     int insert_to_file(std::string path, std::string to_insert, int offset);
+
+    void *get_in_addr(struct sockaddr *sa);
 }
 
 

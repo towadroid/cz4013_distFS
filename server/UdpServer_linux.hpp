@@ -21,8 +21,8 @@ public:
     explicit UdpServer_linux(int portno, double failure_rate  = 0);
     ~UdpServer_linux();
     int receive_msg(unsigned char *buf);
-    void send_msg(const unsigned char *buf, int len) const;
-    void send_msg(const unsigned char *buf, int len, const sockaddr_storage *receiver) const;
+    void send_msg(const unsigned char *buf, size_t len) const;
+    void send_msg(const unsigned char *buf, size_t len, const sockaddr_storage *receiver) const;
     sockaddr_storage get_client_address() const;
 };
 
