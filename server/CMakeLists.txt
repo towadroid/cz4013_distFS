@@ -25,7 +25,7 @@ add_executable(server main.cpp constants.hpp globalvar.hpp UdpServer_linux.cpp U
 
 add_executable(develop main_dev.cpp constants.hpp globalvar.hpp UdpServer_linux.cpp UdpServer_linux.hpp utils.cpp utils.hpp Handler.cpp Handler.hpp MonitoringClient.cpp MonitoringClient.hpp)
 
-add_executable(newtest main_dev.cpp constants.hpp globalvar.hpp UdpServer_linux.cpp UdpServer_linux.hpp utils.cpp utils.hpp Handler.cpp Handler.hpp MonitoringClient.cpp MonitoringClient.hpp server_tests/basic_tests/unit_test1.cpp)
+add_executable(newtest main_dev.cpp constants.hpp globalvar.hpp UdpServer_linux.cpp UdpServer_linux.hpp utils.cpp utils.hpp Handler.cpp Handler.hpp MonitoringClient.cpp MonitoringClient.hpp server_tests/basic_tests/unit_test1.cpp server_tests/basic_tests/utils_test.cpp server_tests/basic_tests/utils_test.hpp)
 
 spdlog_enable_warnings(develop)
 target_link_libraries(develop PRIVATE spdlog)
