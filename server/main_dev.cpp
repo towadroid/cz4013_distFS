@@ -3,7 +3,6 @@
 //
 
 #include <iostream>
-#include <gtest/gtest.h>
 #include "constants.hpp"
 #include "UdpServer_linux.hpp"
 #include "utils.hpp"
@@ -29,10 +28,10 @@ void insertfile() {
 }
 
 // waits for an incoming message and upon receipt answers with a message to the client
-void testUdp() {
+void testUdp(int sec = -1, int usec = -1) {
     UdpServer_linux serv{2302};
     unsigned char buffer[1024];
-    int n = serv.receive_msg(buffer);
+    int n = serv.receive_msg(buffer, sec, usec);
     buffer[n] = '\0';
     printf("Client: %s\n", buffer);
     std::string msg("Hello from server");
@@ -63,7 +62,8 @@ int main(int argc, char **argv) {
     spdlog::set_level(spdlog::level::debug);
     //readfile();
     //insertfile();
-    //testUdp();
+    testUdp();
+    testUdp(5, 0);
     //executeHandler();
     //logger();
     UdpServer_linux server(2302);
@@ -71,7 +71,5 @@ int main(int argc, char **argv) {
     buffer[0] = 3;
     buffer[0] = buffer[0];
     Handler h{};
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
 
 }

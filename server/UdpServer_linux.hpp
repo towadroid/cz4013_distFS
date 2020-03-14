@@ -18,12 +18,17 @@ private:
 
 
 public:
-    explicit UdpServer_linux(int portno, double failure_rate  = 0);
+    explicit UdpServer_linux(int portno, double failure_rate = 0);
+
     ~UdpServer_linux();
-    int receive_msg(unsigned char *buf);
+
+    int receive_msg(unsigned char *buf, int sec = -1, int usec = -1);
+
     void send_msg(const unsigned char *buf, size_t len) const;
+
     void send_msg(const unsigned char *buf, size_t len, const sockaddr_storage *receiver) const;
-    sockaddr_storage get_client_address() const;
+
+    const sockaddr_storage &get_client_address() const;
 };
 
 

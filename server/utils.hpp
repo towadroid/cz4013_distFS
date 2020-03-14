@@ -27,19 +27,27 @@
 #include <string>
 #include <sys/socket.h>
 
-namespace  utils{
-    void packi16(unsigned  char *buf, unsigned short int x);
-    void packi32(unsigned  char *buf, unsigned int x);
+namespace utils {
+    void packi16(unsigned char *buf, unsigned short int x);
+
+    void packi32(unsigned char *buf, unsigned int x);
+
     signed int unpacki32(unsigned char *buf);
+
     unsigned int unpacku32(unsigned char *buf);
 
     void pack_str(unsigned char *buf, const std::string &str);
+
     std::string unpack_str(unsigned char *buf);
 
     void read_file_to_string(std::string path, std::string *content);
+
     int insert_to_file(std::string path, std::string to_insert, int offset);
 
-    void *get_in_addr(struct sockaddr *sa);
+    int get_in_port(sockaddr_storage const *sock_storage);
+
+    std::string get_in_addr_str(sockaddr_storage const *sock_storage);
+
 }
 
 

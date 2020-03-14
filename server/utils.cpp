@@ -7,6 +7,8 @@
 #include <fstream> //for ifstream
 #include <iostream>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#include "spdlog/spdlog.h"
 #include "utils.hpp"
 
 /**Packs an integer with n bits.
@@ -96,11 +98,20 @@ std::string utils::unpack_str(unsigned char *buf) {
  */
 void utils::read_file_to_string(const std::string path, std::string *content) {
     std::ifstream in(path);
-    if(!in.is_open()) throw std::runtime_error("Could not open file. Does file exist?");
+    if (!in.is_open()) throw std::runtime_error("Could not open file. Does file exist?");
     //TODO check if file exists, probably can use std::filesystem::exists
     std::stringstream buffer;
     buffer << in.rdbuf();
-    content->assign(buffer.str());
+    try {
+        content->assign(buffer.str());
+    } catch (const std::length_error &e) {
+        // If the resulting string length would exceed the max_size, a length_error exception is thrown.
+        spdlog::error("{}; the resulting string length would exceed the max_size", e.what());
+    } catch (const std::bad_alloc &e) {
+        // A bad_alloc exception is thrown if the function needs to allocate storage and fails.
+        spdlog::error("{}; could not allocate storage for the string!", e.what());
+    }
+
 }
 
 /**Write a string into a file.
@@ -132,9 +143,25 @@ int utils::insert_to_file(std::string path, std::string to_insert, int offset) {
  * @param sa socketaddr, that contains the address
  * @return
  */
-void* utils::get_in_addr(struct sockaddr *sa) {
-    if (sa->sa_family == AF_INET) return &(((struct sockaddr_in*)sa)->sin_addr);
-    return &(((struct sockaddr_in6*)sa)->sin6_addr);
+void *get_in_addr(struct sockaddr *sa) {
+    if (sa->sa_family == AF_INET) return &(((struct sockaddr_in *) sa)->sin_addr);
+    return &(((struct sockaddr_in6 *) sa)->sin6_addr);
+}
+
+std::string utils::get_in_addr_str(sockaddr_storage const *sock_storage) {
+    char s[INET6_ADDRSTRLEN];
+    inet_ntop(sock_storage->ss_family, get_in_addr((struct sockaddr *) sock_storage), s, sizeof s);
+    return std::string(s);
+}
+
+/** Get port, IPv4 or IPv6:
+ *
+ * @param sa socketaddr, that contains the address
+ * @return
+ */
+int utils::get_in_port(sockaddr_storage const *sock_storage) {
+    if (((sockaddr *) sock_storage)->sa_family == AF_INET) return (((struct sockaddr_in *) sock_storage)->sin_port);
+    return (((struct sockaddr_in6 *) sock_storage)->sin6_port);
 }
 
 

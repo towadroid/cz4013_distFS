@@ -3,6 +3,7 @@
 //
 
 #include "Handler.hpp"
+#include "utils.hpp"
 #include <iostream>
 #include <stdexcept>
 
@@ -62,5 +63,19 @@ void Handler::notify_registered_clients(const std::string &filename, const UdpSe
 
 }
 
+void
+Handler::store_message(const UdpServer_linux &server, const int requestID, const BytePtr message, const size_t len) {
+    std::string clientName = utils::get_in_addr_str(&server.get_client_address());
+    int port = utils::get_in_port(&server.get_client_address());
+    stored_messages[clientName][port][requestID] = MessagePair(message, len);
+}
 
+bool Handler::is_duplicate_request(const sockaddr_storage *client_address, const int requestID) {
+    std::string clientName = utils::get_in_addr_str(client_address);
+    if (0 == stored_messages.count(clientName)) return false;
 
+    int port = utils::get_in_port(client_address);
+    if (0 == stored_messages[clientName].count(port)) return false;
+
+    return !(0 == stored_messages[clientName][port].count(requestID));
+}

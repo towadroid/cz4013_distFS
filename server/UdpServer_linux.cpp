@@ -63,29 +63,63 @@ UdpServer_linux::~UdpServer_linux() {
     close(sockfd);
 }
 
-int UdpServer_linux::receive_msg(unsigned char *buf) {
-    //TODO fix hardcode 1024
-    socklen_t addr_len = sizeof(client_address); //not used later?
-    int numbytes = recvfrom(sockfd, buf, 1024, MSG_WAITALL, (struct sockaddr *) &client_address, &addr_len);
-    if (-1 == numbytes) perror("recvfrom");
+/**
+ * returns -5 if timeout; -10 if something is wrong with the function
+ * all other return values are from recvfrom
+ * no timeout if either sec < 0 or usec < 0
+ *
+ * @param buf
+ * @param sec
+ * @param usec
+ * @return
+ */
+int UdpServer_linux::receive_msg(unsigned char *buf, int sec, int usec) {
+    fd_set readfds;
 
-    //logging purpose
-    {
-        char s[INET6_ADDRSTRLEN];
-        spdlog::debug("received packet from {} containing {} bytes",
-                      inet_ntop(client_address.ss_family,
-                                utils::get_in_addr((struct sockaddr *) &client_address),
-                                s, sizeof s), numbytes);
-        spdlog::trace("packet content: {:X}", spdlog::to_hex(buf, buf + numbytes));
+    // clear the set ahead of time
+    FD_ZERO(&readfds);
+
+    //add descriptor to the set
+    FD_SET(sockfd, &readfds);
+
+    int rv;
+
+    if (sec < 0 || usec < 0) rv = select(sockfd + 1, &readfds, nullptr, nullptr, nullptr);
+    else {
+        // wait until either socket has data ready to be recvfrom()d
+        struct timeval tv;
+        tv.tv_sec = sec;
+        tv.tv_usec = usec;
+        rv = select(sockfd + 1, &readfds, nullptr, nullptr, &tv);
     }
-    return numbytes;
+
+    if (-1 == rv) perror("select");
+    else if (0 == rv) {
+        spdlog::info("Timeout occurred! No data!");
+        return -5;
+    } else {
+        socklen_t addr_len = sizeof(client_address);
+        int numbytes = recvfrom(sockfd, buf, 1024, MSG_WAITALL, (struct sockaddr *) &client_address, &addr_len);
+        if (-1 == numbytes) perror("recvfrom");
+
+        //logging purpose
+        {
+            spdlog::debug("received packet from {}:{} containing {} bytes",
+                          utils::get_in_addr_str(&client_address),
+                          utils::get_in_port(&client_address), numbytes);
+            spdlog::trace("packet content: {:X}", spdlog::to_hex(buf, buf + numbytes));
+        }
+        return numbytes;
+    }
+    return -10;
+
 }
 
 void UdpServer_linux::send_msg(unsigned char const *buf, size_t len) const {
     send_msg(buf, len, &client_address);
 }
 
-sockaddr_storage UdpServer_linux::get_client_address() const {
+const sockaddr_storage &UdpServer_linux::get_client_address() const {
     return client_address;
 }
 
