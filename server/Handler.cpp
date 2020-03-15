@@ -6,6 +6,8 @@
 #include "utils.hpp"
 #include <iostream>
 #include <stdexcept>
+#include <cstring> //for memcpy
+#include "spdlog/spdlog.h"
 
 using constants::Service_type;
 
@@ -40,8 +42,8 @@ void Handler::exec_service(std::integral_constant<constants::Service_type, const
 }
 
 void
-Handler::exec_service(std::integral_constant<Service_type, Service_type::register_client>, const UdpServer_linux &server,
-                      unsigned char *message) {
+Handler::exec_service(std::integral_constant<Service_type, Service_type::register_client>,
+                      const UdpServer_linux &server, unsigned char *message) {
     //TODO extract actual path/filename and monitoring length from message
     std::string filename{"Test"};
     int mon_interval = 100;
@@ -50,12 +52,12 @@ Handler::exec_service(std::integral_constant<Service_type, Service_type::registe
 
 void Handler::notify_registered_clients(const std::string &filename, const UdpServer_linux &server) {
     std::vector<MonitoringClient> file_reg_clients;
-    try {file_reg_clients = registered_clients.at(filename);}
+    try { file_reg_clients = registered_clients.at(filename); }
     catch (const std::out_of_range &oor) {} // there is no entry for this filename => nothing to doo
 
     for (auto it = file_reg_clients.begin(); it != file_reg_clients.end(); ++it) {
-        if(it->expired()) file_reg_clients.erase(it);
-        else{
+        if (it->expired()) file_reg_clients.erase(it);
+        else {
             //TODO send notification message to client
             fprintf(stdout, "Send notification to client");
         }
@@ -64,10 +66,11 @@ void Handler::notify_registered_clients(const std::string &filename, const UdpSe
 }
 
 void
-Handler::store_message(const UdpServer_linux &server, const int requestID, const BytePtr message, const size_t len) {
-    std::string clientName = utils::get_in_addr_str(&server.get_client_address());
-    int port = utils::get_in_port(&server.get_client_address());
-    stored_messages[clientName][port][requestID] = MessagePair(message, len);
+Handler::store_message(const sockaddr_storage &client_address, const int requestID, const BytePtr message,
+                       const size_t len) {
+    std::string clientName = utils::get_in_addr_str(&client_address);
+    int port = utils::get_in_port(&client_address);
+    stored_messages[clientName][port][requestID] = MessagePair{message, len};
 }
 
 bool Handler::is_duplicate_request(const sockaddr_storage *client_address, const int requestID) {
@@ -78,4 +81,154 @@ bool Handler::is_duplicate_request(const sockaddr_storage *client_address, const
     if (0 == stored_messages[clientName].count(port)) return false;
 
     return !(0 == stored_messages[clientName][port].count(requestID));
+}
+
+void Handler::receive_handle_message(UdpServer_linux &server, const int semantic) {
+    while (!timeout_times.empty()) {
+        TimeoutElement te = timeout_times.top();
+        if (std::get<0>(te) < std::chrono::steady_clock::now()) {
+            //has timed out
+            //TODO resend whole message
+            timeout_times.pop();
+            std::get<0>(te) = std::chrono::steady_clock::now() + std::chrono::milliseconds(constants::ACK_TIMEOUT);
+            timeout_times.push(te);
+        }
+    }
+    auto next_timeout = std::get<0>(timeout_times.top());
+
+    unsigned char recvd_msg[MAX_PACKET_SIZE];
+
+    receive_specific_packet(server, semantic, nullptr, 0, 0, recvd_msg, &next_timeout);
+
+    int requestID, overall_size, fragment_no;
+    unpack_header(recvd_msg, requestID, overall_size, fragment_no);
+    const sockaddr_storage &client_address = server.get_client_address();
+    BytePtr message = BytePtr(new unsigned char[(unsigned int) overall_size]);
+    int fragments_expected = overall_size % MAX_CONTENT_SIZE + 1;
+    int cur_frag_no = 0;
+    size_t cur_len = MAX_PACKET_SIZE;
+    do {
+        if (cur_frag_no == fragments_expected - 1) cur_len = overall_size % MAX_CONTENT_SIZE;
+        memcpy(&message[cur_frag_no * MAX_CONTENT_SIZE], recvd_msg + HEADER_SIZE, cur_len);
+        ++cur_frag_no;
+        receive_specific_packet(server, semantic, &client_address, requestID, fragment_no, recvd_msg,
+                                constants::FRAG_TIMEOUT);
+    } while (cur_frag_no < fragments_expected);
+
+    unsigned int service_no = utils::unpacku32(message.get());
+    service(constants::service_codes.at(service_no), server, message.get());
+
+    if (semantic == constants::ATMOST) store_message(client_address, requestID, message, (unsigned int) overall_size);
+}
+
+void Handler::send_complete_message(const UdpServer_linux &server, const unsigned char *raw_content_buf, size_t len,
+                                    int requestID,
+                                    const sockaddr_storage &receiver) {
+    utils::packi32(buffer_mem, (unsigned int) requestID);
+    utils::packi32(buffer_mem + 1, (unsigned int) len);
+
+    size_t cur_content_len = MAX_CONTENT_SIZE;
+    unsigned int fragments_to_send = len % MAX_CONTENT_SIZE + 1;
+    for (unsigned int cur_frag_no = 0; cur_frag_no < fragments_to_send; ++cur_frag_no) {
+        utils::packi32(buffer_mem + 2, cur_frag_no);
+
+        if (cur_frag_no == fragments_to_send - 1) cur_content_len = len % MAX_CONTENT_SIZE;
+        memcpy(buffer_mem + HEADER_SIZE, raw_content_buf + cur_frag_no * MAX_CONTENT_SIZE,
+               cur_content_len - HEADER_SIZE);
+        server.send_msg(buffer_mem, cur_content_len + MAX_PACKET_SIZE, &receiver);
+    }
+}
+
+MessagePair Handler::retrieve_stored_message(const sockaddr_storage &client_address, int requestID) {
+    std::string clientName = utils::get_in_addr_str(&client_address);
+    int port = utils::get_in_port(&client_address);
+    return stored_messages[clientName][port][requestID];
+}
+
+/** Receive only a specific packet (Client, port, requestID, fragment_no)
+ *
+ * Handles incoming ACK's and duplicate requests
+ * returns
+ *
+ * @param server
+ * @param semantic
+ * @param exp_address[in] the client we want to receive from
+ *          if nullptr: receive from any, then exp_requestID, exp_fragment_no and exp_len are ignored
+ * @param exp_requestID
+ * @param exp_fragment_no
+ * @param exp_len
+ * @param timeout_time[in] time, until when we should wait for the spcecific packet, if nullptr -> wait forever
+ * @return status code
+ */
+int Handler::receive_specific_packet(UdpServer_linux &server, int semantic, const sockaddr_storage *const exp_address,
+                                     int exp_requestID, int exp_fragment_no, unsigned char *dest_buf,
+                                     const TimeStamp *const timeout_time) {
+    while (std::chrono::steady_clock::now() > *timeout_time) {
+        int s, usec;
+        utils::future_duration_to_s_usec(*timeout_time, s, usec);
+        int n = server.receive_msg(buffer_mem, s, usec);
+        if (n > 0) {
+            unsigned char *cur = buffer_mem;
+            int requestID, overall_size, fragment_no;
+            unpack_header(buffer_mem, requestID, overall_size, fragment_no);
+            const sockaddr_storage &client_address = server.get_client_address();
+
+            if (semantic == constants::ATMOST) {
+                if (is_duplicate_request(&client_address, requestID) && 0 == fragment_no) {
+                    spdlog::info("Duplicate request, resend message {} to {}:{}", requestID,
+                                 utils::get_in_addr_str(&client_address),
+                                 utils::get_in_port(&client_address));
+                    MessagePair msg_pair = retrieve_stored_message(client_address, requestID);
+                    send_complete_message(server, msg_pair.first.get(), msg_pair.second, requestID, client_address);
+                    continue;
+                }
+                if (is_ACK()) {
+                    handle_ACK();
+                    continue;
+                }
+            }
+
+            //check if it is the packet we want
+            if (nullptr == exp_address || utils::is_similar_sockaddr_storage(*exp_address, client_address)) {
+                //correct sender
+                if (exp_requestID == requestID && exp_fragment_no == fragment_no) {
+                    //correct packet
+                    memcpy(dest_buf, buffer_mem, n);
+                    return n;
+                } //ignore wrong packet from correct sender
+            } else {
+                // wrong sender
+                //TODO tell sender that server is busy
+                continue;
+            }
+        } else if (TIMEOUT == n) {
+            return DID_NOT_RECEIVE;
+        }
+    }
+    return DID_NOT_RECEIVE;
+}
+
+int Handler::receive_specific_packet(UdpServer_linux &server, int semantic, const sockaddr_storage *const exp_address,
+                                     int exp_requestID, int exp_fragment_no, unsigned char *dest_buf,
+                                     int timeout_ms) {
+    auto timeout_time = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_ms);
+    return receive_specific_packet(server, semantic, exp_address, exp_requestID, exp_fragment_no, dest_buf,
+                                   &timeout_time);
+}
+
+bool Handler::is_ACK() {
+    return false;
+}
+
+void Handler::handle_ACK() {
+
+}
+
+void Handler::unpack_header(const unsigned char *buf, int &requestID, int &overall_size, int &fragment_no) {
+    const unsigned char *cur = buf;
+    requestID = utils::unpacki32(cur);
+    cur += 4;
+    overall_size = utils::unpacki32(cur);
+    cur += 4;
+    fragment_no = utils::unpacki32(cur);
 }

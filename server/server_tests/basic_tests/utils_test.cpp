@@ -55,3 +55,11 @@ TEST(Packing, pack_string){
     std::string res = utils::unpack_str(buffer);
     EXPECT_TRUE(0 == a.compare(res));
 }
+
+TEST(Time, calculate_future_time) {
+    auto start = std::chrono::steady_clock::now() + std::chrono::seconds(10);
+    int s, usec;
+    utils::future_duration_to_s_usec(start, s, usec);
+    EXPECT_EQ(s, 9);
+    EXPECT_GE(usec, 999000);
+}

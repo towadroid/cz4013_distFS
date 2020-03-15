@@ -9,10 +9,12 @@
 #include "Handler.hpp"
 #include "MonitoringClient.hpp"
 #include "spdlog/spdlog.h"
+
+#include <chrono>
 /*
 #include <thread>
-#include <chrono>
 std::this_thread::sleep_for(std::chrono::milliseconds(100)); // sleep for x ms*/
+
 
 using std::cout;
 using std::endl;
@@ -62,8 +64,8 @@ int main(int argc, char **argv) {
     spdlog::set_level(spdlog::level::debug);
     //readfile();
     //insertfile();
-    testUdp();
-    testUdp(5, 0);
+    //testUdp();
+    //testUdp(5, 0);
     //executeHandler();
     //logger();
     UdpServer_linux server(2302);

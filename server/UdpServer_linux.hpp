@@ -8,6 +8,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+constexpr int TIMEOUT = -5;
+constexpr int FUNCTION_ERROR = -10;
+
 class UdpServer_linux {
 private:
     int sockfd; //descriptor for socket
@@ -22,7 +25,7 @@ public:
 
     ~UdpServer_linux();
 
-    int receive_msg(unsigned char *buf, int sec = -1, int usec = -1);
+    [[nodiscard]] int receive_msg(unsigned char *buf, int sec = -1, int usec = -1);
 
     void send_msg(const unsigned char *buf, size_t len) const;
 

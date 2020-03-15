@@ -13,6 +13,17 @@ namespace constants {
     constexpr int ATLEAST = 0;
     constexpr int ATMOST = 1;
 
+    constexpr int HEADER_SIZE = 12;
+    /// this is the overall max packet size, including header
+    constexpr int MAX_PACKET_SIZE = 256;
+    constexpr int MAX_CONTENT_SIZE = MAX_PACKET_SIZE - HEADER_SIZE;
+
+    /// timeout time waiting for ack's in ms
+    constexpr int ACK_TIMEOUT = 60000;
+
+    /// time to wait for next fragment in ms
+    constexpr int FRAG_TIMEOUT = 10000;
+
     enum class Service_type : int {
         not_a_service = 0,
         register_client,
@@ -25,8 +36,6 @@ namespace constants {
             {1,   Service_type::service1},
             {2,   Service_type::service2}
     };
-
-    constexpr int BACKLOG = 10; // how many pending connections queue will hold
 
     const std::string IEEE754_NONCOMPLIANCE("Not IEC559/IEEE754 compliant, cannot (un-)marshal data");
 

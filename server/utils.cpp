@@ -48,7 +48,7 @@ T unpackun(int n, unsigned char const *buf) {
 }
 
 template<class T>
-T unpackin(int n, unsigned char *buf) {
+T unpackin(int n, const unsigned char *buf) {
     T result = unpackun<T>(n, buf);
     T helper = (1 << (n - 1)) - 1;
     if (result > helper)
@@ -56,11 +56,11 @@ T unpackin(int n, unsigned char *buf) {
     return result;
 }
 
-unsigned int utils::unpacku32(unsigned char *buf) {
+unsigned int utils::unpacku32(const unsigned char *buf) {
     return unpackun<unsigned int>(32, buf);
 }
 
-signed int utils::unpacki32(unsigned char *buf) {
+signed int utils::unpacki32(const unsigned char *buf) {
     return unpackin<signed int>(32, buf);
 }
 
@@ -125,12 +125,13 @@ void utils::read_file_to_string(const std::string path, std::string *content) {
  */
 int utils::insert_to_file(std::string path, std::string to_insert, int offset) {
     std::fstream myfile(path); // std::ios::in | std::ios::out by default
-    if(!myfile.is_open()) throw std::runtime_error("Could not open file. Does file exist?"); //TODO check if file exists
+    if (!myfile.is_open())
+        throw std::runtime_error("Could not open file. Does file exist?"); //TODO check if file exists
     //save existing old content after offset first
     std::stringstream buffer;
     buffer << myfile.rdbuf();
     std::string content_after_offset(buffer.str());
-    content_after_offset.erase(0,offset);
+    content_after_offset.erase(0, offset);
 
     myfile.seekp(offset, std::ios::beg);
     myfile << to_insert;
@@ -162,6 +163,23 @@ std::string utils::get_in_addr_str(sockaddr_storage const *sock_storage) {
 int utils::get_in_port(sockaddr_storage const *sock_storage) {
     if (((sockaddr *) sock_storage)->sa_family == AF_INET) return (((struct sockaddr_in *) sock_storage)->sin_port);
     return (((struct sockaddr_in6 *) sock_storage)->sin6_port);
+}
+
+void utils::ms_to_s_usec(const int ms, int &s, int &usec) {
+    s = ms / 1000;
+    usec = ms % 1000;
+}
+
+void utils::future_duration_to_s_usec(const std::chrono::time_point<std::chrono::steady_clock> &d, int &s, int &usec) {
+    using namespace std::chrono;
+    auto duration = d - steady_clock::now();
+    s = (int) duration_cast<seconds>(duration).count();
+    usec = (int) duration_cast<microseconds>(duration - seconds(s)).count();
+}
+
+bool utils::is_similar_sockaddr_storage(const sockaddr_storage &a, const sockaddr_storage &b) {
+    bool same_name = (0 == get_in_addr_str(&a).compare(get_in_addr_str(&b)));
+    return same_name && (get_in_port(&a) == get_in_port(&b));
 }
 
 

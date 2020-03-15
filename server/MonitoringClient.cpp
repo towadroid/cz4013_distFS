@@ -13,7 +13,7 @@ MonitoringClient::MonitoringClient(sockaddr_storage address, int monitor_interva
     end = std::chrono::steady_clock::now() + std::chrono::milliseconds{monitor_interval};
 }
 
-sockaddr_storage MonitoringClient::getAddress() const{
+const sockaddr_storage &MonitoringClient::getAddress() const {
     return address;
 }
 

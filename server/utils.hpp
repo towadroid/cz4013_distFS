@@ -26,15 +26,16 @@
 
 #include <string>
 #include <sys/socket.h>
+#include <chrono>
 
 namespace utils {
     void packi16(unsigned char *buf, unsigned short int x);
 
     void packi32(unsigned char *buf, unsigned int x);
 
-    signed int unpacki32(unsigned char *buf);
+    signed int unpacki32(const unsigned char *buf);
 
-    unsigned int unpacku32(unsigned char *buf);
+    unsigned int unpacku32(const unsigned char *buf);
 
     void pack_str(unsigned char *buf, const std::string &str);
 
@@ -48,6 +49,11 @@ namespace utils {
 
     std::string get_in_addr_str(sockaddr_storage const *sock_storage);
 
+    void ms_to_s_usec(int ms, int &s, int &usec);
+
+    void future_duration_to_s_usec(const std::chrono::time_point<std::chrono::steady_clock> &d, int &s, int &usec);
+
+    bool is_similar_sockaddr_storage(const sockaddr_storage &a, const sockaddr_storage &b);
 }
 
 

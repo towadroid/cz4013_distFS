@@ -64,7 +64,7 @@ UdpServer_linux::~UdpServer_linux() {
 }
 
 /**
- * returns -5 if timeout; -10 if something is wrong with the function
+ * returns TIMEOUT if timeout; FUNCTION_ERROR if something is wrong with the function
  * all other return values are from recvfrom
  * no timeout if either sec < 0 or usec < 0
  *
@@ -87,19 +87,17 @@ int UdpServer_linux::receive_msg(unsigned char *buf, int sec, int usec) {
     if (sec < 0 || usec < 0) rv = select(sockfd + 1, &readfds, nullptr, nullptr, nullptr);
     else {
         // wait until either socket has data ready to be recvfrom()d
-        struct timeval tv;
-        tv.tv_sec = sec;
-        tv.tv_usec = usec;
+        struct timeval tv{sec, usec};
         rv = select(sockfd + 1, &readfds, nullptr, nullptr, &tv);
     }
 
     if (-1 == rv) perror("select");
     else if (0 == rv) {
-        spdlog::info("Timeout occurred! No data!");
-        return -5;
+        spdlog::debug("Timeout occurred! No data!");
+        return TIMEOUT;
     } else {
         socklen_t addr_len = sizeof(client_address);
-        int numbytes = recvfrom(sockfd, buf, 1024, MSG_WAITALL, (struct sockaddr *) &client_address, &addr_len);
+        int numbytes = (int) recvfrom(sockfd, buf, 1024, MSG_WAITALL, (struct sockaddr *) &client_address, &addr_len);
         if (-1 == numbytes) perror("recvfrom");
 
         //logging purpose
@@ -111,7 +109,7 @@ int UdpServer_linux::receive_msg(unsigned char *buf, int sec, int usec) {
         }
         return numbytes;
     }
-    return -10;
+    return FUNCTION_ERROR;
 
 }
 
@@ -124,8 +122,8 @@ const sockaddr_storage &UdpServer_linux::get_client_address() const {
 }
 
 void UdpServer_linux::send_msg(const unsigned char *buf, size_t len, const sockaddr_storage *receiver) const {
-    int n = sendto(sockfd, buf, len, MSG_CONFIRM, (const sockaddr *) receiver, sizeof(*receiver));
-    if (n != len) {
+    int n = (int) sendto(sockfd, buf, len, MSG_CONFIRM, (const sockaddr *) receiver, sizeof(*receiver));
+    if (n != (int) len) {
         if (-1 == n) spdlog::error("send_msg");
         else spdlog::error("Could only send {} bytes out of {}", n, len);
     }

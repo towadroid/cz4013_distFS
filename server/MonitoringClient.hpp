@@ -15,11 +15,11 @@ private:
 public:
     MonitoringClient(sockaddr_storage address, int monitor_interval);
 
-    sockaddr_storage getAddress() const; //TODO might return const sockaddr_storage&
+    [[nodiscard]] const sockaddr_storage &getAddress() const;
 
-    bool isValid() const;
+    [[nodiscard]] bool isValid() const;
 
-    bool expired() const;
+    [[nodiscard]] bool expired() const;
 };
 
 
