@@ -12,6 +12,7 @@
 #include "spdlog/spdlog.h"
 #include "utils.hpp"
 #include "HelperClasses.hpp"
+#include <cstdarg>
 
 /**Packs an integer with n bits.
  *
@@ -40,6 +41,10 @@ void utils::packi32(unsigned char *buf, const unsigned int x) {
     packin<unsigned int>(32, buf, x);
 }
 
+void utils::packi64(unsigned char *buf, const unsigned long long int x) {
+    packin<unsigned long long int>(64, buf, x);
+}
+
 template<class T>
 T unpackun(int n, unsigned char const *buf) {
     T result = 0;
@@ -66,6 +71,10 @@ signed int utils::unpacki32(const unsigned char *buf) {
     return unpackin<signed int>(32, buf);
 }
 
+unsigned long long int utils::unpacku64(const unsigned char *buf) {
+    return unpackin<unsigned long long int>(64, buf);
+}
+
 /** Packs a string into a buffer.
  *
  * Buffer should be large enough to hold the string and four additional bytes.
@@ -89,6 +98,18 @@ void utils::pack_str(unsigned char *buf, const std::string &str) {
 std::string utils::unpack_str(unsigned char *buf) {
     size_t n = unpacku32(buf);
     return std::string(reinterpret_cast<const char *>(buf + 4), n);
+}
+
+void utils::pack_float(unsigned char *buf, float x) {
+    int tmp;
+    memcpy(&tmp, &x, 4);
+    packi32(buf, tmp);
+}
+
+void utils::pack_double(unsigned char *buf, double x) {
+    unsigned long long int tmp;
+    memcpy(&tmp, &x, 4);
+    packi64(buf, tmp);
 }
 
 /**Reads a whole ASCII file into a string.
@@ -212,6 +233,134 @@ void utils::future_duration_to_s_usec(const std::chrono::time_point<std::chrono:
 bool utils::is_similar_sockaddr_storage(const sockaddr_storage &a, const sockaddr_storage &b) {
     bool same_name = (0 == get_in_addr_str(&a).compare(get_in_addr_str(&b)));
     return same_name && (get_in_port(&a) == get_in_port(&b));
+}
+
+/** https://en.cppreference.com/w/cpp/language/types
+ *
+ * @return
+ */
+bool utils::is_expected_size_and_format() {
+    bool result = true;
+    result &= std::numeric_limits<double>::is_iec559;
+    result &= std::numeric_limits<float>::is_iec559;
+    result &= (4 == sizeof(int));
+    result &= (8 == sizeof(long long int));
+    return result;
+}
+
+/*
+** pack() -- store data dictated by the format string in the buffer
+**
+**   bits |signed   unsigned   float   string   buffer
+**   -----+-------------------------------------------
+**      8 |            c
+**     32 |   i        I         f
+**     64 |                      d
+**      - |                               s       b
+**
+**  (32-bit unsigned length is automatically prepended to strings)
+*/
+unsigned int utils::calculate_pack_size(const char *format, ...) {
+    va_list ap;
+    va_start(ap, format);
+
+    unsigned int size = 0;
+    for (; *format != '\0'; format++) {
+        switch (*format) {
+            case 'c': {
+                size += 1;
+                break;
+            }
+            case 'i': {
+                size += 4;
+                break;
+            }
+            case 'I': {
+                size += 4;
+                break;
+            }
+            case 'f': {
+                size += 4;
+                break;
+            }
+            case 'd': {
+                size += 8;
+                break;
+            }
+            case 's': {
+                size += 4;
+                size += strlen(va_arg(ap, char*));
+                break;
+            }
+            case 'b': {
+                size += va_arg(ap, unsigned int);
+                break;
+            }
+            default:
+                throw std::invalid_argument("Invalid format string value!");
+        }
+    }
+    return size;
+}
+
+/** For byte arrays, first length, then pointer
+ *
+ * @param buf is expected to hold size, calculated with calculate_pack_size
+ * @param format
+ * @param ...
+ */
+void utils::pack(unsigned char *buf, const char *format, ...) {
+    va_list ap;
+    va_start(ap, format);
+
+    char *s;
+
+    for (; *format != '\0'; format++) {
+        switch (*format) {
+            case 'c': {
+                *buf++ = (unsigned char) va_arg(ap,
+                                                int); //'unsigned char' is promoted to 'int' when passed through '...'
+                break;
+            }
+            case 'i': {
+                packi32(buf, va_arg(ap, int));
+                buf += 4;
+                break;
+            }
+            case 'I': {
+                packi32(buf, va_arg(ap, unsigned int));
+                buf += 4;
+                break;
+            }
+            case 'f': {
+                pack_float(buf, (float) va_arg(ap, double)); //'float' is promoted to 'double' when passed through '...'
+                buf += 4;
+                break;
+            }
+            case 'd': {
+                pack_double(buf, va_arg(ap, double));
+                buf += 8;
+                break;
+            }
+            case 's': {
+                s = va_arg(ap, char * );
+                size_t len = strlen(s);
+                packi32(buf, len);
+                buf += 4;
+                memcpy(buf, s, len);
+                buf += len;
+                break;
+            }
+            case 'b': {
+                size_t len = va_arg(ap, size_t);
+                memcpy(buf, va_arg(ap, unsigned char * ), len);
+                buf += len;
+                break;
+            }
+            default:
+                throw std::invalid_argument("Invalid format string value!");
+        }
+    }
 }
 
 

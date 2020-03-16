@@ -7,21 +7,12 @@
 
 /* I use pack and unpack for marshal and unmarshal respectively
  * because they are shorter to type :)
- *
- * TODO check for IEEE754 and check for sizes
- * e.g. size_t <= 4 bytes
- * sizes: https://en.cppreference.com/w/cpp/language/types
- * if(!std::numeric_limits<float>::is_iec559;) throw std::runtime_error(IEEE754_NONCOMPLIANCE);
  */
 
 /*short int: min. 16
  * int: min. 16
  * long int: min 32
  * long long int: min. 64
- */
-
-/*
- * Only support ASCII encoding first.
  */
 
 #include <string>
@@ -33,6 +24,8 @@
 using std::filesystem::path;
 
 namespace utils {
+    bool is_expected_size_and_format();
+
     void packi16(unsigned char *buf, unsigned short int x);
 
     void packi32(unsigned char *buf, unsigned int x);
@@ -42,6 +35,10 @@ namespace utils {
     unsigned int unpacku32(const unsigned char *buf);
 
     void pack_str(unsigned char *buf, const std::string &str);
+
+    unsigned int calculate_pack_size(const char *format, ...);
+
+    void pack(unsigned char *buf, const char *format, ...);
 
     std::string unpack_str(unsigned char *buf);
 
@@ -61,6 +58,13 @@ namespace utils {
 
     bool is_similar_sockaddr_storage(const sockaddr_storage &a, const sockaddr_storage &b);
 
+    void packi64(unsigned char *buf, const unsigned long long int x);
+
+    unsigned long long int unpacku64(const unsigned char *buf);
+
+    void pack_float(unsigned char *buf, float x);
+
+    void pack_double(unsigned char *buf, double x);
 }
 
 

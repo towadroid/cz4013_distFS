@@ -51,6 +51,10 @@ bool check_range(T val, T lower, T upper, std::string opt_name_short = "empty", 
 }
 
 int main(int argc, char **argv) {
+    spdlog::info("Only ASCII characters are supported!");
+    if (!utils::is_expected_size_and_format())
+        spdlog::error(
+                "This platform's sizes and number formats are unusual and not supported. The application might still work.");
     int c;
     double failure_rate = 0;
     int port_no = 2302;
