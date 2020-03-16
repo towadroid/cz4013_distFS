@@ -27,17 +27,18 @@ namespace constants {
     /// time to wait for next fragment in ms
     constexpr int FRAG_TIMEOUT = 10000;
 
+    //---------- error constants ----------------
+    constexpr int FILE_DOES_NOT_EXIST = 1;
+    constexpr int OFFSET_OUT_OF_BOUNDS = 2;
+
     enum class Service_type : int {
-        not_a_service = 0,
         register_client,
-        service1,
-        service2
+        read,
     };
 
     const std::unordered_map<int, Service_type> service_codes = {
             {123, Service_type::register_client},
-            {1,   Service_type::service1},
-            {2,   Service_type::service2}
+            {14,  Service_type::read},
     };
 
     const std::string IEEE754_NONCOMPLIANCE("Not IEC559/IEEE754 compliant, cannot (un-)marshal data");

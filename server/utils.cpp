@@ -98,7 +98,7 @@ std::string utils::unpack_str(unsigned char *buf) {
  * @param path
  * @param content
  */
-void utils::read_file_to_string(const std::string path, std::string *content) {
+void utils::read_file_to_string(const path &path, std::string *content) {
     if (!std::filesystem::exists(path)) throw File_does_not_exist("Could not read from file", path);
     std::ifstream in(path);
     if (!in.is_open()) throw std::runtime_error("Could not open file.");
@@ -129,7 +129,7 @@ void calculate_bounds(int &lower, int &upper, const int offset, const int count,
     upper = end - end % chunk_size + chunk_size;
 }
 
-int utils::read_file_to_string_cached(const std::string path, BytePtr &content, int offset, int count) {
+int utils::read_file_to_string_cached(const path &path, BytePtr &content, int offset, int count) {
     if (!std::filesystem::exists(path)) throw File_does_not_exist("Could not read from file", path);
     std::ifstream in(path);
     if (!in.is_open()) throw std::runtime_error("Could not open file.");
@@ -154,7 +154,7 @@ int utils::read_file_to_string_cached(const std::string path, BytePtr &content, 
  * @param to_insert string to insert
  * @return 0 if successful
  */
-int utils::insert_to_file(std::string path, std::string to_insert, int offset) {
+int utils::insert_to_file(const path &path, std::string to_insert, int offset) {
     if (!std::filesystem::exists(path)) throw File_does_not_exist("Could no insert into file", path);
     std::fstream myfile(path); // std::ios::in | std::ios::out by default
     if (!myfile.is_open()) throw std::runtime_error("Could not open file.");
@@ -162,7 +162,7 @@ int utils::insert_to_file(std::string path, std::string to_insert, int offset) {
     std::stringstream buffer;
     buffer << myfile.rdbuf();
     std::string content_after_offset(buffer.str());
-    content_after_offset.erase(0, offset);
+    content_after_offset.erase(0, static_cast<unsigned long>(offset));
     if (offset > content_after_offset.length() - 1)
         throw Offset_out_of_range("Could not insert into file", (unsigned int) (content_after_offset.length() - 1));
     myfile.seekp(offset, std::ios::beg);

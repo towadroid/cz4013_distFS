@@ -16,38 +16,48 @@ using constants::Service_type;
  * @param[in] service_type enum specifying which service to execute
  */
 void Handler::service(Service_type service_type, const UdpServer_linux &server, unsigned char *message) {
+    BytePtr raw_content;
+    int raw_length;
     switch (service_type) {
-        case Service_type::service1:
-            exec_service(std::integral_constant<Service_type, Service_type::service1>{}, server, message);
-            break;
-        case Service_type::not_a_service:
-            exec_service(std::integral_constant<Service_type, Service_type::not_a_service>{}, server, message);
+        case Service_type::read:
+            service_read(message, raw_content, raw_length);
             break;
         case Service_type::register_client:
-            exec_service(std::integral_constant<Service_type, Service_type::register_client>{}, server, message);
+            service_register_client(message, raw_content, raw_length, server.get_client_address());
             break;
         default:
-            fprintf(stderr, "Service could not be identified!");
+            spdlog::error("Service could not be identified!");
+    }
+    //TODO send reply
+}
+
+void Handler::service_read(unsigned char *message, BytePtr &raw_result, int &result_length) {
+    //TODO extract path, offset and count
+    path path{constants::FILE_DIR_PATH + "file1"};
+    int offset = 0;
+    int count = 1;
+    BytePtr file_content;
+    try {
+        int n = utils::read_file_to_string_cached(path, file_content, offset, count);
+        raw_result = BytePtr(new unsigned char[n + 4]);
+        utils::packi32(raw_result.get(), n);
+        memcpy(raw_result.get() + 4, file_content.get(), n);
+        result_length = n + 4;
+    } catch (const File_does_not_exist &e) {
+        //TODO
+    } catch (const Offset_out_of_range &e) {
+
     }
 }
 
-void Handler::exec_service(std::integral_constant<constants::Service_type, constants::Service_type::not_a_service>,
-                           const UdpServer_linux &server, unsigned char *message) {
-    fprintf(stderr, "Error in system: Tried to execute the \"not_a_service\" service!");
-}
-
-void Handler::exec_service(std::integral_constant<constants::Service_type, constants::Service_type::service1>,
-                           const UdpServer_linux &server, unsigned char *message) {
-    std::cout << "Service 1 executed" << std::endl;
-}
-
 void
-Handler::exec_service(std::integral_constant<Service_type, Service_type::register_client>,
-                      const UdpServer_linux &server, unsigned char *message) {
+Handler::service_register_client(unsigned char *message, BytePtr &raw_result, int &result_length,
+                                 const sockaddr_storage &client) {
     //TODO extract actual path/filename and monitoring length from message
     std::string filename{"Test"};
     int mon_interval = 100;
-    registered_clients[filename].push_back(MonitoringClient{server.get_client_address(), mon_interval});
+    registered_clients[filename].push_back(MonitoringClient{client, mon_interval});
+    //TODO reply some message
 }
 
 void Handler::notify_registered_clients(const std::string &filename, const UdpServer_linux &server) {
@@ -117,6 +127,14 @@ void Handler::receive_handle_message(UdpServer_linux &server, const int semantic
     if (semantic == constants::ATMOST) store_message(client_address, requestID, message, (unsigned int) overall_size);
 }
 
+/** Given a buffer for raw content to send and its length, send the eventuallz fragmented message
+ *
+ * @param server
+ * @param raw_content_buf
+ * @param len
+ * @param requestID
+ * @param receiver
+ */
 void Handler::send_complete_message(const UdpServer_linux &server, const unsigned char *raw_content_buf, size_t len,
                                     int requestID,
                                     const sockaddr_storage &receiver) {

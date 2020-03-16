@@ -28,6 +28,9 @@
 #include <sys/socket.h>
 #include <chrono>
 #include "constants.hpp"
+#include <filesystem>
+
+using std::filesystem::path;
 
 namespace utils {
     void packi16(unsigned char *buf, unsigned short int x);
@@ -42,11 +45,11 @@ namespace utils {
 
     std::string unpack_str(unsigned char *buf);
 
-    void read_file_to_string(std::string path, std::string *content);
+    void read_file_to_string(const path &path, std::string *content);
 
-    int read_file_to_string_cached(const std::string path, BytePtr &content, int offset, int count);
+    [[nodiscard]] int read_file_to_string_cached(const path &path, BytePtr &content, int offset, int count);
 
-    int insert_to_file(std::string path, std::string to_insert, int offset);
+    int insert_to_file(const path &path, std::string to_insert, int offset);
 
     int get_in_port(sockaddr_storage const *sock_storage);
 

@@ -17,10 +17,12 @@
 #include <queue>
 #include <chrono>
 #include <tuple>
+#include <filesystem>
 
 using constants::Service_type;
 using std::unordered_map;
 using std::string;
+using std::filesystem::path;
 
 using constants::MAX_CONTENT_SIZE;
 using constants::MAX_PACKET_SIZE;
@@ -46,24 +48,10 @@ private:
 
     unsigned char buffer_mem[constants::MAX_PACKET_SIZE];
 
-    /**
-     * overload function by the type integral_constant, each enum matches a type
-     * this ensures function names can all be the same
-     * advantage: services can have arbitrary names, only dependent on enum
-     *
-     * @param server
-     * @param message
-     */
-    void
-    exec_service(std::integral_constant<Service_type, Service_type::not_a_service>, const UdpServer_linux &server,
-                 unsigned char *message);
+    void service_read(unsigned char *message, BytePtr &raw_result, int &result_length);
 
-    void exec_service(std::integral_constant<Service_type, Service_type::service1>, const UdpServer_linux &server,
-                      unsigned char *message);
-
-    void
-    exec_service(std::integral_constant<Service_type, Service_type::register_client>, const UdpServer_linux &server,
-                 unsigned char *message);
+    void service_register_client(unsigned char *message, BytePtr &raw_result, int &result_length,
+                                 const sockaddr_storage &client);
 
     void
     store_message(const sockaddr_storage &client_address, const int requestID, const BytePtr message, const size_t len);
@@ -90,8 +78,8 @@ private:
     void unpack_header(const unsigned char *buf, int &requestID, int &overall_size, int &fragment_no);
 
     int receive_specific_packet(UdpServer_linux &server, int semantic, const sockaddr_storage *const exp_address,
-                                int exp_requestID, int exp_fragment_no, unsigned char *dest_buf,
-                                int timeout_ms);
+                                int exp_requestID, int exp_fragment_no, unsigned char *dest_buf, int timeout_ms);
+
 };
 
 
