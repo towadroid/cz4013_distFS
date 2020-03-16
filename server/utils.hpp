@@ -27,6 +27,7 @@
 #include <string>
 #include <sys/socket.h>
 #include <chrono>
+#include "constants.hpp"
 
 namespace utils {
     void packi16(unsigned char *buf, unsigned short int x);
@@ -43,6 +44,8 @@ namespace utils {
 
     void read_file_to_string(std::string path, std::string *content);
 
+    int read_file_to_string_cached(const std::string path, BytePtr &content, int offset, int count);
+
     int insert_to_file(std::string path, std::string to_insert, int offset);
 
     int get_in_port(sockaddr_storage const *sock_storage);
@@ -54,6 +57,7 @@ namespace utils {
     void future_duration_to_s_usec(const std::chrono::time_point<std::chrono::steady_clock> &d, int &s, int &usec);
 
     bool is_similar_sockaddr_storage(const sockaddr_storage &a, const sockaddr_storage &b);
+
 }
 
 

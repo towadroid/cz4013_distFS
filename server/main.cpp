@@ -2,35 +2,77 @@
 #include <getopt.h>
 #include "constants.hpp"
 #include "utils.hpp"
+#include "spdlog/spdlog.h"
+#include "UdpServer_linux.hpp"
 //#include "globalvar.hpp"
 
 using std::cout;
 using std::endl;
 
-int verbose_flag = 0; //flag set by '--verbose'
 int semantic = 0;
+
+/**Convert string to number
+ *
+ * @param x
+ * @param option 1 for double, 2 for int
+ * @param value
+ * @return
+ */
+bool convert_to_number(std::string x, int option, void *value) {
+    try {
+        if (1 == option) *((double *) value) = std::stod(x);
+        else if (2 == option) *((int *) value) = std::stoi(x);
+        else spdlog::warn("Invalid option value for \"convert to number\"");
+    } catch (const std::invalid_argument &e) {
+        std::cerr << "[invalid argument] option '-f': no conversion could be performed" << "\n";
+        return false;
+    } catch (const std::out_of_range &e) {
+        std::cerr << "[invalid argument] option '-f': value read is out "
+                     "of the range of representable values by a double\n";
+        return false;
+    }
+    return true;
+}
+
+/** Check if val is in [lower, upper]
+ *
+ * @tparam T
+ * @param lower
+ * @param upper
+ * @return
+ */
+template<class T>
+bool check_range(T val, T lower, T upper, std::string opt_name_short = "empty", std::string opt_name = "empty") {
+    if (val < lower || val > upper) {
+        spdlog::warn("[invalid argument] option '{}': {} must be in [{},{}]", opt_name_short, opt_name, lower, upper);
+        return false;
+    }
+    return true;
+}
 
 int main(int argc, char **argv) {
     int c;
     double failure_rate = 0;
+    int port_no = 2302;
 
     static struct option long_options[] = {
             /* These options set a flag. */
-            {"verbose",      no_argument,       &verbose_flag, 1},
+            //none in this case
             /* These options don’t set a flag.
              * Can use single character as val if it matches the single character option*/
-            {"atleast",      no_argument,       nullptr,       2},
-            {"atmost",       no_argument,       nullptr,       3},
-            {"failure-rate", required_argument, nullptr,       'f'},
-            {"port",         required_argument, nullptr,       'p'},
-            {"help",         no_argument,       nullptr,       'h'},
-            {nullptr,        0,                 nullptr,       0}
+            {"atleast",      no_argument,       nullptr, 2},
+            {"atmost",       no_argument,       nullptr, 3},
+            {"failure-rate", required_argument, nullptr, 'f'},
+            {"port",         required_argument, nullptr, 'p'},
+            {"log-level",    optional_argument, nullptr, 'v'},
+            {"help",         no_argument,       nullptr, 'h'},
+            {nullptr, 0,                        nullptr, 0}
     };
 
     /* getopt_long stores the option index here. */
     int option_index = 0;
     std::string option_arg;
-    bool failure_rate_conv_failed = false;
+    bool conv_successful = false;
 
     while ((c = getopt_long(argc, argv, "a:f:hp:v", long_options, &option_index)) != -1) {
         if (optarg) option_arg.assign(optarg);
@@ -41,30 +83,17 @@ int main(int argc, char **argv) {
                 if ("l" == option_arg) semantic = constants::ATLEAST;
                 else if ("m" == option_arg) semantic = constants::ATMOST;
                 else {
-                    std::cerr << "[invalid argument] option '-a' (invocation semantics)\n";
-                    std::cerr << "    value you provided: " << option_arg << "\n";
-                    std::cerr << "    use default value: 'at least' semantic!" << endl;
+                    spdlog::warn("[invalid argument] option '-a' (invocation semantics)");
+                    spdlog::warn("Value you provided: \"{}\". Using default value: 'at least' semantic!", option_arg);
                 }
                 break;
             case 'f':
-                try {
-                    failure_rate = std::stod(option_arg, nullptr);
-                    if (failure_rate < 0 || failure_rate > 1) {
-                        std::cerr << "[invalid argument] option '-f': failure_rate must be in [0,1]" << option_arg
-                                  << "\n";
-                        failure_rate_conv_failed = true;
-                    }
-                } catch (const std::invalid_argument &e) {
-                    std::cerr << "[invalid argument] option '-f': no conversion could be performed" << "\n";
-                    failure_rate_conv_failed = true;
-                } catch (const std::out_of_range &e) {
-                    std::cerr << "[invalid argument] option '-f': value read is out "
-                                 "of the range of representable values by a double\n";
-                    failure_rate_conv_failed = true;
-                }
-                if (failure_rate_conv_failed) {
-                    std::cerr << "    value you provided: " << option_arg << "\n";
-                    std::cerr << "    use default value failure_rate = 0" << endl;
+                conv_successful = convert_to_number(option_arg, 1, &failure_rate);
+                if (conv_successful && (failure_rate < 0 || failure_rate > 1))
+                    conv_successful = check_range(failure_rate, (double) 0, (double) 1, "-f", "failure_rate");
+                if (!conv_successful) {
+                    spdlog::warn("Value you provided: \"{}\". Using default value failure_rate = 0 instead",
+                                 option_arg);
                     failure_rate = 0;
                 }
                 break;
@@ -72,10 +101,23 @@ int main(int argc, char **argv) {
                 cout << "Print help text here" << endl; //TODO generate help text
                 break;
             case 'p':
-                cout << "Set port number, needs to be implemented" << endl; //TODO handle port number
+                conv_successful = convert_to_number(option_arg, 2, &port_no);
+                if (conv_successful) conv_successful = check_range(port_no, 1024, 49151, "-p", "port_no");
+                if (!conv_successful) {
+                    spdlog::warn("Value you provided: \"{}\". Using default value port_no = 2302 instead", option_arg);
+                    port_no = 2302;
+                }
                 break;
             case 'v':
-                verbose_flag = 1;
+                if (nullptr == optarg) spdlog::set_level(spdlog::level::debug);
+                else if ("trace" == option_arg) spdlog::set_level(spdlog::level::trace);
+                else if ("debug" == option_arg) spdlog::set_level(spdlog::level::debug);
+                else if ("info" == option_arg) spdlog::set_level(spdlog::level::info);
+                else if ("warn" == option_arg) spdlog::set_level(spdlog::level::warn);
+                else if ("error" == option_arg) spdlog::set_level(spdlog::level::err);
+                else if ("critical" == option_arg) spdlog::set_level(spdlog::level::critical);
+                else if ("off" == option_arg) spdlog::set_level(spdlog::level::off);
+                else spdlog::warn("Value you provided: \"{}\". Using default value log-level = 2 instead", option_arg);
                 break;
             case '?':
                 // getopt() returns '?' if option character is not recognized
@@ -87,19 +129,26 @@ int main(int argc, char **argv) {
         }
     }
 
-    if (verbose_flag) {
-        cout << "\nSummary:\n" ;
-        cout << "verbose_flag = " << verbose_flag << ", semantic = " << semantic
-             << ", failure_rate = " << failure_rate << std::endl; //TODO add port number
-    }
+    spdlog::info("Summary:\n"
+                 "log-level = {}, semantic = {}, failure_rate = {}, port number = {}",
+                 spdlog::default_logger()->level(),
+                 semantic, failure_rate, port_no);
+
+
     if (optind < argc) {
-        cout << "[wrong argument] The following arguments were not recognized and are being ignored" << endl;
+        std::string ignored_args{};
+        for (int index = optind; index < argc; ++index) {
+            ignored_args.append("Non-option argument ");
+            ignored_args.append(argv[index]);
+            ignored_args.append("\n");
+        }
+        spdlog::warn("[wrong argument] The following arguments were not recognized and are being ignored\n{}",
+                     ignored_args);
         /* Print any remaining command line arguments (not options). */
-        for (int index = optind; index < argc; ++index)
-            std::cout << "    Non-option argument " << argv[index] << std::endl;
+
     }
 
-    //TODO pass failure rate to udp server
+    UdpServer_linux server{port_no, failure_rate};
 
     return 0;
 }

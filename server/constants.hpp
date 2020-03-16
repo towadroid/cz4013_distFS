@@ -7,6 +7,9 @@
 
 #include <string>
 #include <unordered_map>
+#include <chrono>
+#include <netinet/in.h>
+#include <memory>
 
 namespace constants {
     // invocation semantics
@@ -45,7 +48,15 @@ namespace constants {
      * Can change by setting "working directory" by editing run configuration
      */
     const std::string FILE_DIR_PATH("../filesystem_root/");
+
+    constexpr int CACHE_BLOCK_SIZE = 10;
 }
+
+typedef std::shared_ptr<unsigned char[]> BytePtr;
+typedef std::pair<BytePtr, size_t> MessagePair;
+typedef std::chrono::time_point<std::chrono::steady_clock> TimeStamp;
+/// 0 timeout time, 1 clientaddr, 2 requestID
+typedef std::tuple<TimeStamp, sockaddr_storage, int> TimeoutElement;
 
 
 #endif //SERVER_CONSTANTS_HPP

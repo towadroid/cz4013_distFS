@@ -9,6 +9,8 @@
 #include "Handler.hpp"
 #include "MonitoringClient.hpp"
 #include "spdlog/spdlog.h"
+#include "spdlog/logger.h"
+#include "HelperClasses.hpp"
 
 #include <chrono>
 /*
@@ -23,6 +25,12 @@ void readfile() {
     std::string tfile;
     utils::read_file_to_string(constants::FILE_DIR_PATH + "file1", &tfile);
     cout << tfile;
+}
+
+void readfile_cached() {
+    BytePtr a;
+    int n = utils::read_file_to_string_cached(constants::FILE_DIR_PATH + "file1", a, 2, 52);
+    printf("%d: %.*s", n, n, a.get());
 }
 
 void insertfile() {
@@ -54,15 +62,17 @@ void logger() {
     spdlog::set_level(spdlog::level::trace);
     spdlog::trace("Trace");
     spdlog::debug("Debug");
-    spdlog::info("Welcome to spdlog!");
+    spdlog::info("Welcome to spdlog!\nWith linebreak");
     spdlog::warn("Easy padding in numbers like {:08d}", 12);
     spdlog::error("Error");
     spdlog::critical("das ist kritisch");
+    printf("%d", spdlog::default_logger()->level());
 }
 
-int main(int argc, char **argv) {
+int main() {
     spdlog::set_level(spdlog::level::debug);
     //readfile();
+    readfile_cached();
     //insertfile();
     //testUdp();
     //testUdp(5, 0);
@@ -73,5 +83,6 @@ int main(int argc, char **argv) {
     buffer[0] = 3;
     buffer[0] = buffer[0];
     Handler h{};
+    std::unordered_map<sockaddr_storage, int, SockaddrStor_Hasher, SockaddrStor_Equal> um{};
 
 }

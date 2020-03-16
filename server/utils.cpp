@@ -8,8 +8,10 @@
 #include <iostream>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <filesystem>
 #include "spdlog/spdlog.h"
 #include "utils.hpp"
+#include "HelperClasses.hpp"
 
 /**Packs an integer with n bits.
  *
@@ -97,9 +99,9 @@ std::string utils::unpack_str(unsigned char *buf) {
  * @param content
  */
 void utils::read_file_to_string(const std::string path, std::string *content) {
+    if (!std::filesystem::exists(path)) throw File_does_not_exist("Could not read from file", path);
     std::ifstream in(path);
-    if (!in.is_open()) throw std::runtime_error("Could not open file. Does file exist?");
-    //TODO check if file exists, probably can use std::filesystem::exists
+    if (!in.is_open()) throw std::runtime_error("Could not open file.");
     std::stringstream buffer;
     buffer << in.rdbuf();
     try {
@@ -111,7 +113,36 @@ void utils::read_file_to_string(const std::string path, std::string *content) {
         // A bad_alloc exception is thrown if the function needs to allocate storage and fails.
         spdlog::error("{}; could not allocate storage for the string!", e.what());
     }
+}
 
+/**
+ *
+ * @param lower[out] start from here
+ * @param upper[out] read until here (exclusive)
+ * @param offset
+ * @param count
+ * @param chunk_size
+ */
+void calculate_bounds(int &lower, int &upper, const int offset, const int count, const int chunk_size) {
+    lower = offset - offset % chunk_size;
+    int end = offset + count;
+    upper = end - end % chunk_size + chunk_size;
+}
+
+int utils::read_file_to_string_cached(const std::string path, BytePtr &content, int offset, int count) {
+    if (!std::filesystem::exists(path)) throw File_does_not_exist("Could not read from file", path);
+    std::ifstream in(path);
+    if (!in.is_open()) throw std::runtime_error("Could not open file.");
+    int start, end;
+    calculate_bounds(start, end, offset, count, constants::CACHE_BLOCK_SIZE);
+    int size = end - start;
+    content = BytePtr(new unsigned char[size]);
+    in.read((char *) content.get(), size);
+    int actual_read = in.gcount();
+    if (start + actual_read < offset + count)
+        throw Offset_out_of_range("Could not read requested file section, offset+count exceeds bounds!",
+                                  start + actual_read);
+    return actual_read;
 }
 
 /**Write a string into a file.
@@ -124,15 +155,16 @@ void utils::read_file_to_string(const std::string path, std::string *content) {
  * @return 0 if successful
  */
 int utils::insert_to_file(std::string path, std::string to_insert, int offset) {
+    if (!std::filesystem::exists(path)) throw File_does_not_exist("Could no insert into file", path);
     std::fstream myfile(path); // std::ios::in | std::ios::out by default
-    if (!myfile.is_open())
-        throw std::runtime_error("Could not open file. Does file exist?"); //TODO check if file exists
+    if (!myfile.is_open()) throw std::runtime_error("Could not open file.");
     //save existing old content after offset first
     std::stringstream buffer;
     buffer << myfile.rdbuf();
     std::string content_after_offset(buffer.str());
     content_after_offset.erase(0, offset);
-
+    if (offset > content_after_offset.length() - 1)
+        throw Offset_out_of_range("Could not insert into file", (unsigned int) (content_after_offset.length() - 1));
     myfile.seekp(offset, std::ios::beg);
     myfile << to_insert;
     myfile << content_after_offset;

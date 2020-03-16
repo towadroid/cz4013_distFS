@@ -68,19 +68,13 @@ void Handler::notify_registered_clients(const std::string &filename, const UdpSe
 void
 Handler::store_message(const sockaddr_storage &client_address, const int requestID, const BytePtr message,
                        const size_t len) {
-    std::string clientName = utils::get_in_addr_str(&client_address);
-    int port = utils::get_in_port(&client_address);
-    stored_messages[clientName][port][requestID] = MessagePair{message, len};
+    stored_messages[client_address][requestID] = MessagePair{message, len};
 }
 
 bool Handler::is_duplicate_request(const sockaddr_storage *client_address, const int requestID) {
-    std::string clientName = utils::get_in_addr_str(client_address);
-    if (0 == stored_messages.count(clientName)) return false;
+    if (0 == stored_messages.count(*client_address)) return false;
 
-    int port = utils::get_in_port(client_address);
-    if (0 == stored_messages[clientName].count(port)) return false;
-
-    return !(0 == stored_messages[clientName][port].count(requestID));
+    return !(0 == stored_messages[*client_address].count(requestID));
 }
 
 void Handler::receive_handle_message(UdpServer_linux &server, const int semantic) {
@@ -88,7 +82,9 @@ void Handler::receive_handle_message(UdpServer_linux &server, const int semantic
         TimeoutElement te = timeout_times.top();
         if (std::get<0>(te) < std::chrono::steady_clock::now()) {
             //has timed out
-            //TODO resend whole message
+            using std::get;
+            MessagePair pair = stored_messages[get<1>(te)][get<2>(te)];
+            //send_complete_message(server, pair.first.get(), pair.second, get<3>(te), )
             timeout_times.pop();
             std::get<0>(te) = std::chrono::steady_clock::now() + std::chrono::milliseconds(constants::ACK_TIMEOUT);
             timeout_times.push(te);
@@ -140,9 +136,7 @@ void Handler::send_complete_message(const UdpServer_linux &server, const unsigne
 }
 
 MessagePair Handler::retrieve_stored_message(const sockaddr_storage &client_address, int requestID) {
-    std::string clientName = utils::get_in_addr_str(&client_address);
-    int port = utils::get_in_port(&client_address);
-    return stored_messages[clientName][port][requestID];
+    return stored_messages[client_address][requestID];
 }
 
 /** Receive only a specific packet (Client, port, requestID, fragment_no)
@@ -174,16 +168,16 @@ int Handler::receive_specific_packet(UdpServer_linux &server, int semantic, cons
             const sockaddr_storage &client_address = server.get_client_address();
 
             if (semantic == constants::ATMOST) {
+                if (is_ACK()) {
+                    handle_ACK();
+                    continue;
+                }
                 if (is_duplicate_request(&client_address, requestID) && 0 == fragment_no) {
                     spdlog::info("Duplicate request, resend message {} to {}:{}", requestID,
                                  utils::get_in_addr_str(&client_address),
                                  utils::get_in_port(&client_address));
                     MessagePair msg_pair = retrieve_stored_message(client_address, requestID);
                     send_complete_message(server, msg_pair.first.get(), msg_pair.second, requestID, client_address);
-                    continue;
-                }
-                if (is_ACK()) {
-                    handle_ACK();
                     continue;
                 }
             }
