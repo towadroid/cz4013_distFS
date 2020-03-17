@@ -2,11 +2,37 @@ import javafx.util.Pair;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.util.*;
 
 public class Util {
+
+    public Map<String, Object> send_and_receive(int request_id, int service_id, String input, Runner runner) throws IOException {
+        runner.socket.setSoTimeout(Constants.TIMEOUT);
+        List<Byte> reply_content;
+        List<List<Byte>> request = marshall(request_id, service_id, input);
+        send_message(request, runner);
+        System.out.println("Request sent");
+        while(true) {
+            try {
+                reply_content = receive_message(runner);
+                System.out.println("Reply received");
+                break;
+            }
+            catch (SocketTimeoutException t) {
+                System.out.println("Request re-sent");
+                send_message(request, runner);
+            }
+        }
+
+        // upon receiving, send acknowledgment
+        Map<String, Object> reply = un_marshall(service_id, reply_content);
+        List<List<Byte>> ack = marshall(request_id, Constants.ACKNOWLEDGMENT_ID, "");
+        send_message(ack, runner);
+
+        return reply;
+    }
 
     public static List<List<Byte>> marshall(int request_id, int service_id, String input) {
         String[] arr = input.split( " ");
@@ -37,24 +63,59 @@ public class Util {
     }
 
     /**Receive an entire message (which could contain many packets)
+     * @param runner
      * @return the content portion of the message
      * @throws IOException from socket receive
      */
-    public List<Byte> receive_message(Runner runner) throws IOException{
+    public static List<Byte> receive_message(Runner runner) throws IOException {
         int total_packets = -1;
         List<Byte> all_content = new ArrayList<>();
         int current_packet = 0;
+        int overall_content_size = -1;
+        int fragment_number = -1;
         while (total_packets == -1 || current_packet != total_packets) {
             byte[] packet = runner.receive_packet();
             int[] header = get_header(packet);
-            int overall_content_size = header[1];
+            overall_content_size = header[1];
+            fragment_number = header[2];
+            if (fragment_number != current_packet) {
+                throw new SocketTimeoutException();
+            }
             if (total_packets == -1) {
                 total_packets = (int) Math.ceil(overall_content_size*1.0/Constants.MAX_PACKET_CONTENT_SIZE);
             }
             all_content = add_byte_array(all_content, Arrays.copyOfRange(packet, Constants.PACKET_HEADER_SIZE, packet.length));
             current_packet++;
         }
+        all_content = all_content.subList(0, overall_content_size);
         return all_content;
+    }
+
+    public static Map<String, Object> un_marshall(int service_id, List<Byte> raw_content) {
+        Map<String, Object> message = new HashMap<>();
+        int status_id = bytes_to_int(raw_content.subList(0, 4));
+        message.put("status_id", status_id);
+
+        if (status_id == Constants.SUCCESSFUL_SERVICE_ID) {
+            List<Pair<String, Integer>> params = Constants.get_successful_reply_params(service_id);
+            int counter = 4;
+            for (Pair<String, Integer> param : params) {
+                int param_type = param.getValue();
+                int i = bytes_to_int(raw_content.subList(counter, counter + Constants.INT_SIZE));
+                counter += Constants.INT_SIZE;
+                message.put(param.getKey(), i);
+                if (param_type == Constants.STRING_ID) {
+                    String s = new String(to_primitive(raw_content.subList(counter, counter+i)));
+                    counter += i;
+                    message.put(param.getKey(), s);
+                }
+            }
+        }
+        else {
+            String fail_message = Constants.get_failed_reply_params(status_id);
+            message.put("message", fail_message);
+        }
+        return message;
     }
 
     public static int[] get_header(byte[] packet) {
@@ -71,6 +132,14 @@ public class Util {
                 ((bytes[1] & 0xFF) << 8) |
                 ((bytes[2] & 0xFF) << 16 ) |
                 ((bytes[3] & 0xFF) << 24 );
+    }
+
+    // little-endian??
+    public static int bytes_to_int(List<Byte> bytes) {
+        return ((bytes.get(0) & 0xFF) << 0) |
+                ((bytes.get(1) & 0xFF) << 8) |
+                ((bytes.get(2) & 0xFF) << 16 ) |
+                ((bytes.get(3) & 0xFF) << 24 );
     }
 
     public static List<Byte> marshall_to_content(int service_id, List<Pair<String, Integer>> params, String[] values) {
