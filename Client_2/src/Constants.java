@@ -1,7 +1,10 @@
 import javafx.util.Pair;
 
 import java.net.InetAddress;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Constants {
 
@@ -33,9 +36,22 @@ public class Constants {
     public static final List<Pair<String, Integer>> WRITE_REPLY_PARAMS =
             List.of();
 
-    // TODO: implement this
-    public static List<Pair<String, Integer>> get_request_params(int service_id) {
-        return READ_REPLY_PARAMS;
+    public static final Map<Integer, List<Pair<String, Integer>>> REQUEST_PARAMS;
+    static{
+        REQUEST_PARAMS = Map.of(READ_REQUEST_ID, READ_REQUEST_PARAMS,
+                WRITE_REQUEST_ID, WRITE_REQUEST_PARAMS);
     }
 
+    public static final Map<Integer, List<Pair<String, Integer>>> REPLY_PARAMS;
+    static{
+        REPLY_PARAMS = Map.of(READ_REQUEST_ID, READ_REPLY_PARAMS,
+                WRITE_REQUEST_ID, WRITE_REQUEST_PARAMS);
+    }
+
+    public static List<Pair<String, Integer>> get_request_params(int service_id) {
+        return REQUEST_PARAMS.get(service_id);
+    }
+    public static List<Pair<String, Integer>> get_successful_reply_params(int service_id) {
+        return REPLY_PARAMS.get(service_id);
+    }
 }

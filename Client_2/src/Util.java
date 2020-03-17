@@ -1,21 +1,81 @@
 import javafx.util.Pair;
 
+import java.io.IOException;
+import java.net.DatagramPacket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Util {
 
-    public List<List<Byte>> marshall(int request_id, int service_id, String input) {
+    public static List<List<Byte>> marshall(int request_id, int service_id, String input) {
         String[] arr = input.split( " ");
         return marshall( request_id,  service_id, arr);
     }
 
-    public List<List<Byte>> marshall(int request_id, int service_id, String[] values) {
+    /** For marshalling requests
+     * @param request_id
+     * @param service_id
+     * @param values
+     * @return
+     */
+    public static List<List<Byte>> marshall(int request_id, int service_id, String[] values) {
+        List<Pair<String, Integer>> params = Constants.get_request_params(service_id);
+        List<Byte> raw_content = marshall_to_content(service_id, params, values);
+        List<List<Byte>> message = marshall_to_packets(request_id, raw_content);
+        return message;
+    }
 
+    /** Send an entire message (which can contain many packets) to the server
+     * @param message message to be sent
+     * @throws IOException from sending packet
+     */
+    public static void send_message(List<List<Byte>> message, Runner runner) throws IOException{
+        for (List<Byte> packet : message) {
+            runner.send_packet(packet);
+        }
+    }
+
+    /**Receive an entire message (which could contain many packets)
+     * @return the content portion of the message
+     * @throws IOException from socket receive
+     */
+    public List<Byte> receive_message(Runner runner) throws IOException{
+        int total_packets = -1;
+        List<Byte> all_content = new ArrayList<>();
+        int current_packet = 0;
+        while (total_packets == -1 || current_packet != total_packets) {
+            byte[] packet = runner.receive_packet();
+            int[] header = get_header(packet);
+            int overall_content_size = header[1];
+            if (total_packets == -1) {
+                total_packets = (int) Math.ceil(overall_content_size*1.0/Constants.MAX_PACKET_CONTENT_SIZE);
+            }
+            all_content = add_byte_array(all_content, Arrays.copyOfRange(packet, Constants.PACKET_HEADER_SIZE, packet.length));
+            current_packet++;
+        }
+        return all_content;
+    }
+
+    public static int[] get_header(byte[] packet) {
+        int[] header = new int[3];
+        header[0] = bytes_to_int(Arrays.copyOfRange(packet, 0, 4));
+        header[1] = bytes_to_int(Arrays.copyOfRange(packet, 4, 8));
+        header[2] = bytes_to_int(Arrays.copyOfRange(packet, 8, 12));
+        return header;
+    }
+
+    // little-endian??
+    public static int bytes_to_int(byte[] bytes) {
+        return ((bytes[0] & 0xFF) << 0) |
+                ((bytes[1] & 0xFF) << 8) |
+                ((bytes[2] & 0xFF) << 16 ) |
+                ((bytes[3] & 0xFF) << 24 );
+    }
+
+    public static List<Byte> marshall_to_content(int service_id, List<Pair<String, Integer>> params, String[] values) {
         // raw content: | service_id | content... |
         List<Byte> raw_content = new ArrayList<>();
-        List<Pair<String, Integer>> params = Constants.get_request_params(service_id);
-
         raw_content = add_int(service_id, raw_content);
         for (int i = 0; i < params.size(); i++) {
             int param_type = params.get(i).getValue();
@@ -29,8 +89,10 @@ public class Util {
                 raw_content = add_int(Integer.parseInt(values[i]), raw_content);
             }
         }
+        return raw_content;
+    }
 
-        // create message
+    public static List<List<Byte>> marshall_to_packets(int request_id, List<Byte> raw_content) {
         int raw_content_size = raw_content.size();
         int total_packets = (int) Math.ceil(raw_content_size * 1.0 / Constants.MAX_PACKET_CONTENT_SIZE);
         List<List<Byte>> message = new ArrayList<>();
@@ -49,11 +111,8 @@ public class Util {
             }
             packet.addAll(raw_content.subList(begin_index, end_index));
         }
-
         return message;
     }
-
-
 
     public static byte[] to_primitive(List<Byte> in) {
         byte[] ret = new byte[in.size()];
@@ -90,6 +149,19 @@ public class Util {
             in.add(b);
         }
         return in;
+    }
+
+    /** FOR DEBUGGING ONLY
+     * @param request_id
+     * @param service_id
+     * @param values
+     * @return
+     */
+    public static List<List<Byte>> marshall_reply(int request_id, int service_id, String[] values) {
+        List<Pair<String, Integer>> params = Constants.get_successful_reply_params(service_id);
+        List<Byte> raw_content = marshall_to_content(service_id, params, values);
+        List<List<Byte>> message = marshall_to_packets(request_id, raw_content);
+        return message;
     }
 
 }
