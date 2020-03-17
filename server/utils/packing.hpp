@@ -17,7 +17,7 @@ namespace internals {
 
     unsigned int calc_size(unsigned int);
 
-    unsigned int calc_size(std::string &a);
+    unsigned int calc_size(const std::string &a);
 
     template<typename... Rest>
     unsigned int calc_size(unsigned int len, unsigned char *, Rest... rest) {
@@ -36,10 +36,12 @@ namespace internals {
 
     unsigned int pack(unsigned char *result, unsigned int a);
 
-    unsigned int pack(unsigned char *result, std::string &a);
+    void pack(unsigned char *result, float a);
+
+    unsigned int pack(unsigned char *result, const std::string &str);
 
     template<typename... Rest>
-    unsigned int pack(unsigned char *result, unsigned int len, unsigned char *content, Rest... rest) {
+    unsigned int pack(unsigned char *result, const unsigned int len, const unsigned char *content, const Rest... rest) {
         unsigned int elem_size = len;
         memcpy(result, content, len);
         unsigned int rest_size = pack(result + elem_size, rest...);
@@ -47,22 +49,22 @@ namespace internals {
     }
 
     template<typename T, typename... Rest>
-    unsigned int pack(unsigned char *result, T t, Rest... rest) {
+    unsigned int pack(unsigned char *result, const T t, const Rest... rest) {
         unsigned int elem_size = pack(result, t);
         unsigned int rest_size = pack(result + elem_size, rest...);
         return elem_size + rest_size;
     }
 
-    unsigned int unpack(unsigned char *result, char &a);
+    unsigned int unpack(const unsigned char *result, char &a);
 
-    unsigned int unpack(unsigned char *result, int &a);
+    unsigned int unpack(const unsigned char *result, int &a);
 
-    unsigned int unpack(unsigned char *result, unsigned int &a);
+    unsigned int unpack(const unsigned char *result, unsigned int &a);
 
-    unsigned int unpack(unsigned char *result, std::string &a);
+    unsigned int unpack(const unsigned char *result, std::string &a);
 
     template<typename T, typename... Rest>
-    unsigned int unpack(unsigned char *result, T &t, Rest &... rest) {
+    unsigned int unpack(const unsigned char *result, T &t, Rest &... rest) {
         unsigned int elem_size = unpack(result, t);
         return unpack(result + elem_size, rest...);
     }
@@ -72,7 +74,7 @@ namespace utils {
     /**Pack data based on the type passed
      *
      * for associated sizes for different types see internals::calc_size
-     * unsigned char* that should be directly copied should be prepended with its length
+     * unsigned char* that should be directly copied should be prepended with its length (unsigned int)!
      * (32-bit unsigned length is automatically prepended to strings)
      *
      * @tparam T
@@ -83,7 +85,7 @@ namespace utils {
      * @return
      */
     template<typename T, typename... Rest>
-    unsigned int pack(BytePtr &result, T t, Rest... rest) {
+    unsigned int pack(BytePtr &result, const T t, const Rest... rest) {
         unsigned int size = internals::calc_size(t, rest...);
         result = BytePtr(new unsigned char[size]);
         return internals::pack(result.get(), t, rest...);
@@ -100,7 +102,7 @@ namespace utils {
      * @param rest
      */
     template<typename T, typename... Rest>
-    void unpack(unsigned char *result, T &t, Rest &... rest) {
+    void unpack(const unsigned char *result, T &t, Rest &... rest) {
         internals::unpack(result, t, rest...);
     }
 }

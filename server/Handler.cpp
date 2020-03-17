@@ -4,6 +4,7 @@
 
 #include "Handler.hpp"
 #include "utils/utils.hpp"
+#include "utils/packing.hpp"
 #include <iostream>
 #include <stdexcept>
 #include <cstring> //for memcpy
@@ -39,10 +40,11 @@ void Handler::service(Service_type service_type, const UdpServer_linux &server, 
 }
 
 void Handler::service_read(unsigned char *message, BytePtr &raw_result, int &result_length) {
-    //TODO extract path, offset and count
-    path path{constants::FILE_DIR_PATH + "file1"};
-    int offset = 0;
-    int count = 1;
+    int offset, count;
+    std::string path_string;
+    utils::unpack(message, path_string, offset, count);
+    path path(constants::FILE_DIR_PATH + path_string);
+
     BytePtr file_content;
     try {
         int n = utils::read_file_to_string_cached(path, file_content, offset, count);
@@ -58,9 +60,11 @@ void Handler::service_read(unsigned char *message, BytePtr &raw_result, int &res
 }
 
 void Handler::service_insert(unsigned char *message, BytePtr &raw_result, int &result_length) {
-    //TODO extract path, offset, content_to_write
-    path path{constants::FILE_DIR_PATH + "test_ins"};
-    int offset = 0;
+    int offset;
+    std::string path_string, to_write;
+    utils::unpack(message, path_string, offset, to_write);
+    path path(constants::FILE_DIR_PATH + path_string);
+
     string content_to_write{"Test insert"};
     try {
         utils::insert_to_file(path, content_to_write, offset);
@@ -75,10 +79,10 @@ void Handler::service_insert(unsigned char *message, BytePtr &raw_result, int &r
 void
 Handler::service_register_client(unsigned char *message, BytePtr &raw_result, int &result_length,
                                  const sockaddr_storage &client) {
-    //TODO extract actual path/filename and monitoring length from message
-    std::string filename{"Test"};
-    int mon_interval = 100;
-    registered_clients[filename].push_back(MonitoringClient{client, mon_interval});
+    std::string path_string;
+    int mon_interval;
+    utils::unpack(message, path_string, mon_interval);
+    registered_clients[path_string].push_back(MonitoringClient{client, mon_interval});
     //TODO reply some message
 }
 
