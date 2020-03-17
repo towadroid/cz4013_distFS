@@ -80,6 +80,7 @@ private:
     int receive_specific_packet(UdpServer_linux &server, int semantic, const sockaddr_storage *const exp_address,
                                 int exp_requestID, int exp_fragment_no, unsigned char *dest_buf, int timeout_ms);
 
+    void service_insert(unsigned char *message, BytePtr &raw_result, int &result_length);
 };
 
 

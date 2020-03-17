@@ -19,14 +19,21 @@ void Handler::service(Service_type service_type, const UdpServer_linux &server, 
     BytePtr raw_content;
     int raw_length;
     switch (service_type) {
-        case Service_type::read:
+        case Service_type::read: {
             service_read(message, raw_content, raw_length);
             break;
-        case Service_type::register_client:
+        }
+        case Service_type::register_client: {
             service_register_client(message, raw_content, raw_length, server.get_client_address());
             break;
-        default:
+        }
+        case Service_type::insert: {
+            service_insert(message, raw_content, raw_length);
+            break;
+        }
+        default: {
             spdlog::error("Service could not be identified!");
+        }
     }
     //TODO send reply
 }
@@ -45,6 +52,21 @@ void Handler::service_read(unsigned char *message, BytePtr &raw_result, int &res
         result_length = n + 4;
     } catch (const File_does_not_exist &e) {
         //TODO
+    } catch (const Offset_out_of_range &e) {
+
+    }
+}
+
+void Handler::service_insert(unsigned char *message, BytePtr &raw_result, int &result_length) {
+    //TODO extract path, offset, content_to_write
+    path path{constants::FILE_DIR_PATH + "test_ins"};
+    int offset = 0;
+    string content_to_write{"Test insert"};
+    try {
+        utils::insert_to_file(path, content_to_write, offset);
+        //TODO send ack
+    } catch (const File_does_not_exist &e) {
+
     } catch (const Offset_out_of_range &e) {
 
     }
