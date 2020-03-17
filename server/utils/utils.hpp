@@ -18,29 +18,13 @@
 #include <string>
 #include <sys/socket.h>
 #include <chrono>
-#include "constants.hpp"
+#include "../constants.hpp"
 #include <filesystem>
 
 using std::filesystem::path;
 
 namespace utils {
     bool is_expected_size_and_format();
-
-    void packi16(unsigned char *buf, unsigned short int x);
-
-    void packi32(unsigned char *buf, unsigned int x);
-
-    signed int unpacki32(const unsigned char *buf);
-
-    unsigned int unpacku32(const unsigned char *buf);
-
-    void pack_str(unsigned char *buf, const std::string &str);
-
-    unsigned int calculate_pack_size(const char *format, ...);
-
-    void pack(unsigned char *buf, const char *format, ...);
-
-    std::string unpack_str(unsigned char *buf);
 
     void read_file_to_string(const path &path, std::string *content);
 
@@ -57,14 +41,6 @@ namespace utils {
     void future_duration_to_s_usec(const std::chrono::time_point<std::chrono::steady_clock> &d, int &s, int &usec);
 
     bool is_similar_sockaddr_storage(const sockaddr_storage &a, const sockaddr_storage &b);
-
-    void packi64(unsigned char *buf, const unsigned long long int x);
-
-    unsigned long long int unpacku64(const unsigned char *buf);
-
-    void pack_float(unsigned char *buf, float x);
-
-    void pack_double(unsigned char *buf, double x);
 }
 
 

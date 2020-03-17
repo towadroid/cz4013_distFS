@@ -26,11 +26,11 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(googletest spdlog)
 ######
 
-add_executable(server main.cpp constants.hpp globalvar.hpp UdpServer_linux.cpp UdpServer_linux.hpp utils.cpp utils.hpp Handler.cpp Handler.hpp MonitoringClient.cpp MonitoringClient.hpp HelperClasses.hpp)
+add_executable(server main.cpp constants.hpp globalvar.hpp UdpServer_linux.cpp UdpServer_linux.hpp utils/utils.cpp utils/utils.hpp Handler.cpp Handler.hpp MonitoringClient.cpp MonitoringClient.hpp HelperClasses.hpp utils/packing.cpp utils/packing.hpp utils/packing_low_level.cpp utils/packing_low_level.hpp)
 
-add_executable(develop main_dev.cpp constants.hpp globalvar.hpp UdpServer_linux.cpp UdpServer_linux.hpp utils.cpp utils.hpp Handler.cpp Handler.hpp MonitoringClient.cpp MonitoringClient.hpp HelperClasses.hpp)
+add_executable(develop main_dev.cpp constants.hpp globalvar.hpp UdpServer_linux.cpp UdpServer_linux.hpp utils/utils.cpp utils/utils.hpp Handler.cpp Handler.hpp MonitoringClient.cpp MonitoringClient.hpp HelperClasses.hpp utils/packing.cpp utils/packing.hpp utils/packing_low_level.cpp utils/packing_low_level.hpp)
 
-add_executable(newtest constants.hpp globalvar.hpp UdpServer_linux.cpp UdpServer_linux.hpp utils.cpp utils.hpp Handler.cpp Handler.hpp MonitoringClient.cpp MonitoringClient.hpp server_tests/basic_tests/unit_test1.cpp server_tests/basic_tests/utils_test.cpp HelperClasses.hpp)
+add_executable(newtest constants.hpp globalvar.hpp UdpServer_linux.cpp UdpServer_linux.hpp utils/utils.cpp utils/utils.hpp Handler.cpp Handler.hpp MonitoringClient.cpp MonitoringClient.hpp server_tests/basic_tests/unit_test1.cpp server_tests/basic_tests/utils_test.cpp HelperClasses.hpp utils/packing.cpp utils/packing.hpp utils/packing_low_level.cpp utils/packing_low_level.hpp)
 
 spdlog_enable_warnings(server)
 target_link_libraries(server PRIVATE spdlog)

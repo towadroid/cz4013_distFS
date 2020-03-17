@@ -3,9 +3,10 @@
 //
 
 #include "gtest/gtest.h"
-#include "../../utils.hpp"
+#include "../../utils/utils.hpp"
 #include <string>
 #include "../../constants.hpp"
+#include "../../utils/packing.hpp"
 
 unsigned char buffer[1024];
 
@@ -111,4 +112,58 @@ TEST(Packing, pack_variadic) {
     cur += 4;
 
     delete[] result;
+}
+
+TEST(Packing, pack_variadic_template) {
+    std::string b{"abc"}, b2;
+    unsigned char bla[16];
+    for (unsigned char i = 0; i < 16; ++i) bla[i] = i;
+
+    char a = 'a', a2;
+    int one = 1, one2;
+    int two = 2, two2;
+    int three = 3, three2;
+
+    unsigned char tmp[32];
+    BytePtr result_ptr;
+    utils::pack(result_ptr, a, one, two, b, (unsigned int) 16, bla, three);
+
+    unsigned char *result = result_ptr.get();
+
+    int cur = 0;
+    EXPECT_EQ(result[0], a);
+    cur += 1;
+
+    utils::packi32(tmp, one);
+    EXPECT_TRUE(compare(result + cur, tmp, 4));
+    cur += 4;
+
+    utils::packi32(tmp, two);
+    EXPECT_TRUE(compare(result + cur, tmp, 4));
+    cur += 4;
+
+    utils::pack_str(tmp, b);
+    EXPECT_TRUE(compare(result + cur, tmp, 7));
+    cur += 7;
+
+    EXPECT_TRUE(compare(result + cur, bla, 16));
+    cur += 16;
+
+    utils::packi32(tmp, three);
+    EXPECT_TRUE(compare(result + cur, tmp, 4));
+    cur += 4;
+
+    //use 4 int for the byte[16]
+    unsigned int k, l, m, n;
+
+    utils::unpack(result, a2, one2, two2, b2, k, l, m, n, three2);
+    EXPECT_EQ(a, a2);
+    EXPECT_EQ(one, one2);
+    EXPECT_EQ(two, two2);
+    EXPECT_EQ(k, utils::unpacku32(bla));
+    EXPECT_EQ(l, utils::unpacku32(bla + 4));
+    EXPECT_EQ(m, utils::unpacku32(bla + 8));
+    EXPECT_EQ(n, utils::unpacku32(bla + 12));
+    EXPECT_EQ(b, b2);
+    EXPECT_EQ(three, three2);
 }

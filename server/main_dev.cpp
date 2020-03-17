@@ -5,7 +5,8 @@
 #include <iostream>
 #include "constants.hpp"
 #include "UdpServer_linux.hpp"
-#include "utils.hpp"
+#include "utils/utils.hpp"
+#include "utils/packing.hpp"
 #include "Handler.hpp"
 #include "MonitoringClient.hpp"
 #include "spdlog/spdlog.h"
@@ -72,7 +73,7 @@ void logger() {
 int main() {
     spdlog::set_level(spdlog::level::debug);
     //readfile();
-    readfile_cached();
+    //readfile_cached();
     //insertfile();
     //testUdp();
     //testUdp(5, 0);

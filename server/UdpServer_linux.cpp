@@ -10,7 +10,7 @@
 #include "spdlog/spdlog.h"
 #include "spdlog/fmt/bin_to_hex.h"
 #include <arpa/inet.h> //for inet_ntop
-#include "utils.hpp"
+#include "utils/utils.hpp"
 #include "UdpServer_linux.hpp"
 
 UdpServer_linux::UdpServer_linux(int portno, double failure_rate) : portno(portno), failure_rate(failure_rate) {
