@@ -45,13 +45,10 @@ void Handler::service_read(unsigned char *message, BytePtr &raw_result, int &res
     utils::unpack(message, path_string, offset, count);
     path path(constants::FILE_DIR_PATH + path_string);
 
-    BytePtr file_content;
     try {
-        int n = utils::read_file_to_string_cached(path, file_content, offset, count);
-        raw_result = BytePtr(new unsigned char[n + 4]);
-        utils::packi32(raw_result.get(), n);
-        memcpy(raw_result.get() + 4, file_content.get(), n);
-        result_length = n + 4;
+        std::string file_content;
+        utils::read_file_to_string_cached(path, file_content, offset, count);
+        result_length = (int) utils::pack(raw_result, file_content);
     } catch (const File_does_not_exist &e) {
         //TODO
     } catch (const Offset_out_of_range &e) {
@@ -147,8 +144,9 @@ void Handler::receive_handle_message(UdpServer_linux &server, const int semantic
                                 constants::FRAG_TIMEOUT);
     } while (cur_frag_no < fragments_expected);
 
-    unsigned int service_no = utils::unpacku32(message.get());
-    service(constants::service_codes.at(service_no), server, message.get());
+    //unsigned int service_no = utils::unpacku32(message.get());
+    //TODO
+    // service(constants::service_codes.at(service_no), server, message.get());
 
     if (semantic == constants::ATMOST) store_message(client_address, requestID, message, (unsigned int) overall_size);
 }
@@ -162,20 +160,19 @@ void Handler::receive_handle_message(UdpServer_linux &server, const int semantic
  * @param receiver
  */
 void Handler::send_complete_message(const UdpServer_linux &server, const unsigned char *raw_content_buf, size_t len,
-                                    int requestID,
-                                    const sockaddr_storage &receiver) {
-    utils::packi32(buffer_mem, (unsigned int) requestID);
-    utils::packi32(buffer_mem + 1, (unsigned int) len);
+                                    int requestID, const sockaddr_storage &receiver) {
+    BytePtr result;
+    BytePtr partial_header;
+    unsigned int partial_header_len = utils::pack(partial_header, requestID, (int) len);
 
     size_t cur_content_len = MAX_CONTENT_SIZE;
     unsigned int fragments_to_send = len % MAX_CONTENT_SIZE + 1;
     for (unsigned int cur_frag_no = 0; cur_frag_no < fragments_to_send; ++cur_frag_no) {
-        utils::packi32(buffer_mem + 2, cur_frag_no);
-
         if (cur_frag_no == fragments_to_send - 1) cur_content_len = len % MAX_CONTENT_SIZE;
-        memcpy(buffer_mem + HEADER_SIZE, raw_content_buf + cur_frag_no * MAX_CONTENT_SIZE,
-               cur_content_len - HEADER_SIZE);
-        server.send_msg(buffer_mem, cur_content_len + MAX_PACKET_SIZE, &receiver);
+
+        utils::pack(result, partial_header_len, partial_header.get(), cur_frag_no, (unsigned int) cur_content_len,
+                    raw_content_buf + cur_frag_no * MAX_CONTENT_SIZE);
+        server.send_msg(result.get(), cur_content_len + MAX_PACKET_SIZE, &receiver);
     }
 }
 
@@ -263,10 +260,5 @@ void Handler::handle_ACK() {
 }
 
 void Handler::unpack_header(const unsigned char *buf, int &requestID, int &overall_size, int &fragment_no) {
-    const unsigned char *cur = buf;
-    requestID = utils::unpacki32(cur);
-    cur += 4;
-    overall_size = utils::unpacki32(cur);
-    cur += 4;
-    fragment_no = utils::unpacki32(cur);
+    utils::unpack(buf, requestID, overall_size, fragment_no);
 }

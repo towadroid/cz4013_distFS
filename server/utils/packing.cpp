@@ -4,6 +4,10 @@
 
 #include "packing.hpp"
 
+unsigned int internals::calc_size() {
+    return 0;
+}
+
 unsigned int internals::calc_size(const char) {
     return 1;
 }
@@ -36,6 +40,10 @@ void packin(int n, unsigned char *buf, const T x) {
         *buf = x >> n; //"x >> n" will be truncated, only lowest byte is stored
         buf++;
     }
+}
+
+unsigned int internals::pack(unsigned char *result) {
+    return 0;
 }
 
 unsigned int internals::pack(unsigned char *result, const char a) {

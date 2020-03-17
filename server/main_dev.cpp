@@ -29,9 +29,9 @@ void readfile() {
 }
 
 void readfile_cached() {
-    BytePtr a;
-    int n = utils::read_file_to_string_cached(constants::FILE_DIR_PATH + "file1", a, 2, 52);
-    printf("%d: %.*s", n, n, a.get());
+    std::string a;
+    utils::read_file_to_string_cached(constants::FILE_DIR_PATH + "file1", a, 2, 52);
+    cout << a << endl;
 }
 
 void insertfile() {
@@ -46,10 +46,11 @@ void testUdp(int sec = -1, int usec = -1) {
     buffer[n] = '\0';
     printf("Client: %s\n", buffer);
     std::string msg("Hello from server");
-    utils::pack_str(buffer, msg);
+    BytePtr packed;
+    utils::pack(packed, msg);
     size_t len = 4 + msg.length();
     //std::cout <<  client_address.sin_port;
-    serv.send_msg(buffer, len);
+    serv.send_msg(packed.get(), len);
 }
 
 void executeHandler() {
@@ -85,5 +86,9 @@ int main() {
     buffer[0] = buffer[0];
     Handler h{};
     std::unordered_map<sockaddr_storage, int, SockaddrStor_Hasher, SockaddrStor_Equal> um{};
+
+    BytePtr test;
+    unsigned char a[2];
+    utils::pack(test, (unsigned int) 2, (const unsigned char *) a);
 
 }

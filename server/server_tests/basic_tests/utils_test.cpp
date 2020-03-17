@@ -8,43 +8,44 @@
 #include "../../constants.hpp"
 #include "../../utils/packing.hpp"
 
-unsigned char buffer[1024];
-
 TEST(Packing, pack_integers) {
-    utils::packi32(buffer, 0x03002684);
+    BytePtr buffer;
+    unsigned int tmp = 0x03002684;
+    utils::pack(buffer, tmp);
     EXPECT_EQ(buffer[0], 0x03);
     EXPECT_EQ(buffer[1], 0x00);
     EXPECT_EQ(buffer[2], 0x26);
     EXPECT_EQ(buffer[3], 0x84);
 
-    utils::packi32(buffer, 0xF3002684);
+    tmp = 0xF3002684;
+    utils::pack(buffer, tmp);
     EXPECT_EQ(buffer[0], 0xF3);
     EXPECT_EQ(buffer[1], 0x00);
     EXPECT_EQ(buffer[2], 0x26);
     EXPECT_EQ(buffer[3], 0x84);
-
-    utils::packi16(buffer, 0xF3002684);
-    EXPECT_EQ(buffer[0], 0x26);
-    EXPECT_EQ(buffer[1], 0x84);
 }
 
 // 0xF3002684 = -218093948
 TEST(Packing, unpack_integers) {
+    BytePtr buffer = BytePtr(new unsigned char[4]);
     buffer[0] = 0xF3;
     buffer[1] = 0x00;
     buffer[2] = 0x26;
     buffer[3] = 0x84;
-    int value_signed = 0xF3002684;
-    unsigned int value_unsigned = 0xF3002684;
-    EXPECT_EQ(utils::unpacki32(buffer), value_signed);
-    EXPECT_EQ(utils::unpacku32(buffer), value_unsigned);
+    int value_signed = 0xF3002684, value_s_unpacked;
+    unsigned int value_unsigned = 0xF3002684, value_u_unpacked;
+    utils::unpack(buffer.get(), value_s_unpacked);
+    utils::unpack(buffer.get(), value_u_unpacked);
+    EXPECT_EQ(value_s_unpacked, value_signed);
+    EXPECT_EQ(value_u_unpacked, value_unsigned);
 }
 
 // "a bc" = 61 20 62 63
 TEST(Packing, pack_string) {
+    BytePtr buffer;
     std::string a{"a bc"};
-    utils::pack_str(buffer, a);
-    unsigned char *cur = buffer;
+    utils::pack(buffer, a);
+    unsigned char *cur = buffer.get();
     EXPECT_EQ(*cur++, 0x0);
     EXPECT_EQ(*cur++, 0x0);
     EXPECT_EQ(*cur++, 0x0);
@@ -54,7 +55,8 @@ TEST(Packing, pack_string) {
     EXPECT_EQ(*cur++, 0x62);
     EXPECT_EQ(*cur++, 0x63);
 
-    std::string res = utils::unpack_str(buffer);
+    std::string res;
+    utils::unpack(buffer.get(), res);
     EXPECT_TRUE(0 == a.compare(res));
 }
 
@@ -75,45 +77,6 @@ bool compare(const unsigned char *a, const unsigned char *b, int n) {
     return result;
 }
 
-
-TEST(Packing, pack_variadic) {
-    std::string a{"abc"};
-    unsigned char bla[16];
-    for (unsigned char i = 0; i < 16; ++i) bla[i] = i;
-    unsigned int n = utils::calculate_pack_size("ciisbi", a.c_str(), 16);
-
-    EXPECT_EQ(36, n);
-
-    auto result = new unsigned char[n];
-    unsigned char tmp[32];
-    utils::pack(result, "ciisbi", 'a', 1, 2, a.c_str(), 16, bla, 3);
-
-    int cur = 0;
-    EXPECT_EQ(result[0], 'a');
-    cur += 1;
-
-    utils::packi32(tmp, 1);
-    EXPECT_TRUE(compare(result + cur, tmp, 4));
-    cur += 4;
-
-    utils::packi32(tmp, 2);
-    EXPECT_TRUE(compare(result + cur, tmp, 4));
-    cur += 4;
-
-    utils::pack_str(tmp, a);
-    EXPECT_TRUE(compare(result + cur, tmp, 7));
-    cur += 7;
-
-    EXPECT_TRUE(compare(result + cur, bla, 16));
-    cur += 16;
-
-    utils::packi32(tmp, 3);
-    EXPECT_TRUE(compare(result + cur, tmp, 4));
-    cur += 4;
-
-    delete[] result;
-}
-
 TEST(Packing, pack_variadic_template) {
     std::string b{"abc"}, b2;
     unsigned char bla[16];
@@ -124,9 +87,9 @@ TEST(Packing, pack_variadic_template) {
     int two = 2, two2;
     int three = 3, three2;
 
-    unsigned char tmp[32];
+    BytePtr tmp;
     BytePtr result_ptr;
-    utils::pack(result_ptr, a, one, two, b, (unsigned int) 16, bla, three);
+    utils::pack(result_ptr, a, one, two, b, (unsigned int) 16, (const unsigned char *) bla, three);
 
     unsigned char *result = result_ptr.get();
 
@@ -134,36 +97,42 @@ TEST(Packing, pack_variadic_template) {
     EXPECT_EQ(result[0], a);
     cur += 1;
 
-    utils::packi32(tmp, one);
-    EXPECT_TRUE(compare(result + cur, tmp, 4));
+    utils::pack(tmp, one);
+    EXPECT_TRUE(compare(result + cur, tmp.get(), 4));
     cur += 4;
 
-    utils::packi32(tmp, two);
-    EXPECT_TRUE(compare(result + cur, tmp, 4));
+    utils::pack(tmp, two);
+    EXPECT_TRUE(compare(result + cur, tmp.get(), 4));
     cur += 4;
 
-    utils::pack_str(tmp, b);
-    EXPECT_TRUE(compare(result + cur, tmp, 7));
+    utils::pack(tmp, b);
+    EXPECT_TRUE(compare(result + cur, tmp.get(), 7));
     cur += 7;
 
     EXPECT_TRUE(compare(result + cur, bla, 16));
     cur += 16;
 
-    utils::packi32(tmp, three);
-    EXPECT_TRUE(compare(result + cur, tmp, 4));
+    utils::pack(tmp, three);
+    EXPECT_TRUE(compare(result + cur, tmp.get(), 4));
     cur += 4;
 
     //use 4 int for the byte[16]
-    unsigned int k, l, m, n;
+    unsigned int k, l, m, n, k2, l2, m2, n2;
 
     utils::unpack(result, a2, one2, two2, b2, k, l, m, n, three2);
     EXPECT_EQ(a, a2);
     EXPECT_EQ(one, one2);
     EXPECT_EQ(two, two2);
-    EXPECT_EQ(k, utils::unpacku32(bla));
-    EXPECT_EQ(l, utils::unpacku32(bla + 4));
-    EXPECT_EQ(m, utils::unpacku32(bla + 8));
-    EXPECT_EQ(n, utils::unpacku32(bla + 12));
+
+    utils::unpack(bla, k2);
+    utils::unpack(bla + 4, l2);
+    utils::unpack(bla + 8, m2);
+    utils::unpack(bla + 12, n2);
+
+    EXPECT_EQ(k, k2);
+    EXPECT_EQ(l, l2);
+    EXPECT_EQ(m, m2);
+    EXPECT_EQ(n, n2);
     EXPECT_EQ(b, b2);
     EXPECT_EQ(three, three2);
 }

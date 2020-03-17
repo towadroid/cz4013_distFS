@@ -11,6 +11,8 @@
 #include "utils.hpp"
 
 namespace internals {
+    unsigned int calc_size();
+
     unsigned int calc_size(char);
 
     unsigned int calc_size(int);
@@ -20,15 +22,17 @@ namespace internals {
     unsigned int calc_size(const std::string &a);
 
     template<typename... Rest>
-    unsigned int calc_size(unsigned int len, unsigned char *, Rest... rest) {
+    unsigned int calc_size(const unsigned int len, const unsigned char *const, const Rest... rest) {
         return len + calc_size(rest...);
     }
 
     //needs to be under the declaration of specializations
     template<typename T, typename... Rest>
-    unsigned int calc_size(T t, Rest... rest) {
+    unsigned int calc_size(const T t, const Rest... rest) {
         return calc_size(t) + calc_size(rest...);
     }
+
+    unsigned int pack(unsigned char *result);
 
     unsigned int pack(unsigned char *result, char a);
 
@@ -41,7 +45,8 @@ namespace internals {
     unsigned int pack(unsigned char *result, const std::string &str);
 
     template<typename... Rest>
-    unsigned int pack(unsigned char *result, const unsigned int len, const unsigned char *content, const Rest... rest) {
+    unsigned int
+    pack(unsigned char *result, const unsigned int len, const unsigned char *const content, const Rest... rest) {
         unsigned int elem_size = len;
         memcpy(result, content, len);
         unsigned int rest_size = pack(result + elem_size, rest...);

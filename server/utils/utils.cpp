@@ -51,20 +51,23 @@ void calculate_bounds(int &lower, int &upper, const int offset, const int count,
     upper = end - end % chunk_size + chunk_size;
 }
 
-int utils::read_file_to_string_cached(const path &path, BytePtr &content, int offset, int count) {
+void utils::read_file_to_string_cached(const path &path, std::string &content, int offset, int count) {
     if (!std::filesystem::exists(path)) throw File_does_not_exist("Could not read from file", path);
     std::ifstream in(path);
     if (!in.is_open()) throw std::runtime_error("Could not open file.");
     int start, end;
     calculate_bounds(start, end, offset, count, constants::CACHE_BLOCK_SIZE);
     int size = end - start;
-    content = BytePtr(new unsigned char[size]);
-    in.read((char *) content.get(), size);
-    int actual_read = in.gcount();
+
+    in.seekg(start);
+    auto byte_content = new unsigned char[(unsigned int) size];
+    in.read((char *) byte_content, size);
+    int actual_read = (int) in.gcount();
     if (start + actual_read < offset + count)
         throw Offset_out_of_range("Could not read requested file section, offset+count exceeds bounds!",
                                   start + actual_read);
-    return actual_read;
+    content = std::string{(char *) byte_content};
+    delete[] byte_content;
 }
 
 /**Write a string into a file.

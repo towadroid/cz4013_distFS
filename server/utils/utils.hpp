@@ -28,7 +28,7 @@ namespace utils {
 
     void read_file_to_string(const path &path, std::string *content);
 
-    [[nodiscard]] int read_file_to_string_cached(const path &path, BytePtr &content, int offset, int count);
+    void read_file_to_string_cached(const path &path, std::string &content, int offset, int count);
 
     int insert_to_file(const path &path, std::string to_insert, int offset);
 
