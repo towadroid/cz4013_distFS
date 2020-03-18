@@ -9,6 +9,7 @@ public class Runner {
     Scanner scanner;
     InetAddress host;
     DatagramSocket socket;
+    int request_id = 0;
 
     public Runner() throws UnknownHostException, SocketException {
         host = InetAddress.getByName(Constants.SERVER_NAME);
@@ -38,7 +39,8 @@ public class Runner {
         return reply.getData();
     }
 
-    public static void main(String[] args) throws SocketException, UnknownHostException {
+    // TODO: when to increase request id???
+    public static void main(String[] args) throws IOException {
         Runner runner = new Runner();
         while (true) {
             System.out.println(Constants.PROMPT);

@@ -8,7 +8,7 @@ import java.util.*;
 
 public class Util {
 
-    public Map<String, Object> send_and_receive(int request_id, int service_id, String input, Runner runner) throws IOException {
+    public static Map<String, Object> send_and_receive(int request_id, int service_id, String input, Runner runner) throws IOException {
         runner.socket.setSoTimeout(Constants.TIMEOUT);
         List<Byte> reply_content;
         List<List<Byte>> request = marshall(request_id, service_id, input);
@@ -25,11 +25,13 @@ public class Util {
                 send_message(request, runner);
             }
         }
-
-        // upon receiving, send acknowledgment
         Map<String, Object> reply = un_marshall(service_id, reply_content);
-        List<List<Byte>> ack = marshall(request_id, Constants.ACKNOWLEDGMENT_ID, "");
-        send_message(ack, runner);
+
+        if (Constants.AT_MOST_ONCE) {
+            // upon receiving, send acknowledgment
+            List<List<Byte>> ack = marshall(request_id, Constants.ACKNOWLEDGMENT_ID, "");
+            send_message(ack, runner);
+        }
 
         return reply;
     }
@@ -60,6 +62,7 @@ public class Util {
         for (List<Byte> packet : message) {
             runner.send_packet(packet);
         }
+        runner.request_id++;
     }
 
     /**Receive an entire message (which could contain many packets)
@@ -67,6 +70,8 @@ public class Util {
      * @return the content portion of the message
      * @throws IOException from socket receive
      */
+
+    // TODO: check that the fragment number matches
     public static List<Byte> receive_message(Runner runner) throws IOException {
         int total_packets = -1;
         List<Byte> all_content = new ArrayList<>();
@@ -179,6 +184,7 @@ public class Util {
                 end_index = (fragment+1) * Constants.MAX_PACKET_CONTENT_SIZE;
             }
             packet.addAll(raw_content.subList(begin_index, end_index));
+            message.add(packet);
         }
         return message;
     }

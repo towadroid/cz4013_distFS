@@ -5,8 +5,8 @@ import java.util.Map;
 
 public class Constants {
 
-    public static final String SERVER_NAME = "localhost";
-    public static final int SERVER_PORT = 6789;
+    public static final String SERVER_NAME = "10.27.135.232";
+    public static final int SERVER_PORT = 2302;
 
     public static final int INT_ID = 0;
     public static final int INT_SIZE = 4;
@@ -14,16 +14,14 @@ public class Constants {
     public static final int MAX_PACKET_SIZE = 256;
     public static final int PACKET_HEADER_SIZE = 12;
     public static final int MAX_PACKET_CONTENT_SIZE = MAX_PACKET_SIZE - PACKET_HEADER_SIZE;
-    public static final int TIMEOUT = 3000;
+    public static final int TIMEOUT = 10000;
     public static final boolean AT_MOST_ONCE = true;
 
     // Services
     public static final int SUCCESSFUL_SERVICE_ID = 0;
     public static final int EXIT_ID = 0;
-    public static final int MONITOR_REQUEST_ID = 3;
-    public static final String PROMPT = "Please enter: 0 for exit, 1 for read, 2 for write, 3 for monitior";
-
-    public static final String[] test = {"a"};
+    public static final int TEST_ID = 99;
+    public static final String PROMPT = "Please enter: 0 for exit, 1 for read, 2 for write, 3 for monitor, 99 for test";
 
     public static final int READ_REQUEST_ID = 1;
     public static final List<Pair<String, Integer>> READ_REQUEST_PARAMS =

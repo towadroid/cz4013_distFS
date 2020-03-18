@@ -1,3 +1,6 @@
+import java.io.IOException;
+import java.util.Map;
+
 public class Read extends  Service {
 
     public Read(Runner r) {
@@ -5,13 +8,16 @@ public class Read extends  Service {
     }
 
     @Override
-    public void act() {
-        //TODO: ask for user input, send/receive message
+    public void act() throws IOException {
+
+        //ask for user input
         String request_param_string = Util.get_request_param_string(Constants.READ_REQUEST_ID);
         System.out.println(request_param_string);
         String request_value_string = runner.scanner.nextLine();
 
-
+        Map<String, Object> reply = Util.send_and_receive(runner.request_id, Constants.READ_REQUEST_ID,
+                request_value_string, runner);
+        System.out.println("reply received");
 
     }
 
