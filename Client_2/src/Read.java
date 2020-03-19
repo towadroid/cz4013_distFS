@@ -17,6 +17,7 @@ public class Read extends  Service {
 
         Map<String, Object> reply = Util.send_and_receive(runner.request_id, Constants.READ_REQUEST_ID,
                 request_value_string, runner);
+        int file_content_size = ((String) reply.get("content")).length();
         System.out.println("reply received");
 
     }

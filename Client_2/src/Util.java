@@ -62,7 +62,6 @@ public class Util {
         for (List<Byte> packet : message) {
             runner.send_packet(packet);
         }
-        runner.request_id++;
     }
 
     /**Receive an entire message (which could contain many packets)
@@ -133,18 +132,18 @@ public class Util {
 
     // little-endian??
     public static int bytes_to_int(byte[] bytes) {
-        return ((bytes[0] & 0xFF) << 0) |
-                ((bytes[1] & 0xFF) << 8) |
-                ((bytes[2] & 0xFF) << 16 ) |
-                ((bytes[3] & 0xFF) << 24 );
+        return ((bytes[3] & 0xFF) << 0) |
+                ((bytes[2] & 0xFF) << 8) |
+                ((bytes[1] & 0xFF) << 16 ) |
+                ((bytes[0] & 0xFF) << 24 );
     }
 
     // little-endian??
     public static int bytes_to_int(List<Byte> bytes) {
-        return ((bytes.get(0) & 0xFF) << 0) |
-                ((bytes.get(1) & 0xFF) << 8) |
-                ((bytes.get(2) & 0xFF) << 16 ) |
-                ((bytes.get(3) & 0xFF) << 24 );
+        return ((bytes.get(3) & 0xFF) << 0) |
+                ((bytes.get(2) & 0xFF) << 8) |
+                ((bytes.get(1) & 0xFF) << 16 ) |
+                ((bytes.get(0) & 0xFF) << 24 );
     }
 
     public static List<Byte> marshall_to_content(int service_id, List<Pair<String, Integer>> params, String[] values) {
@@ -206,10 +205,11 @@ public class Util {
         return ret;
     }
 
+    // big-endian
     public static List<Byte> add_int(int num, List<Byte> in) {
         byte[] bytes = new byte[4];
         for (int i = 0; i < 4; i++) {
-            bytes[i] = (byte) (num >>> (i*8));
+            bytes[4-i-1] = (byte) (num >>> (i*8));
         }
         return add_byte_array(in, bytes);
     }
