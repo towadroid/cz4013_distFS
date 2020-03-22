@@ -45,9 +45,10 @@ void utils::read_file_to_string(const path &path, std::string *content) {
  * @param count
  * @param chunk_size
  */
-void calculate_bounds(int &lower, int &upper, const int offset, const int count, const int chunk_size) {
+void
+utils::internals2::calculate_bounds(int &lower, int &upper, const int offset, const int count, const int chunk_size) {
     lower = offset - offset % chunk_size;
-    int end = offset + count;
+    int end = offset + count - 1;
     upper = end - end % chunk_size + chunk_size;
 }
 
@@ -56,7 +57,7 @@ void utils::read_file_to_string_cached(const path &path, std::string &content, i
     std::ifstream in(path);
     if (!in.is_open()) throw std::runtime_error("Could not open file.");
     int start, end;
-    calculate_bounds(start, end, offset, count, constants::CACHE_BLOCK_SIZE);
+    internals2::calculate_bounds(start, end, offset, count, constants::CACHE_BLOCK_SIZE);
     int size = end - start;
 
     in.seekg(start);
@@ -66,7 +67,7 @@ void utils::read_file_to_string_cached(const path &path, std::string &content, i
     if (start + actual_read < offset + count)
         throw Offset_out_of_range("Could not read requested file section, offset+count exceeds bounds!",
                                   start + actual_read);
-    content = std::string{(char *) byte_content};
+    content = std::string{(char *) byte_content, (unsigned long) actual_read};
     delete[] byte_content;
 }
 
@@ -79,7 +80,7 @@ void utils::read_file_to_string_cached(const path &path, std::string &content, i
  * @param to_insert string to insert
  * @return 0 if successful
  */
-int utils::insert_to_file(const path &path, std::string to_insert, int offset) {
+int utils::insert_to_file(const path &path, std::string to_insert, unsigned int offset) {
     if (!std::filesystem::exists(path)) throw File_does_not_exist("Could no insert into file", path);
     std::fstream myfile(path); // std::ios::in | std::ios::out by default
     if (!myfile.is_open()) throw std::runtime_error("Could not open file.");
@@ -88,8 +89,8 @@ int utils::insert_to_file(const path &path, std::string to_insert, int offset) {
     buffer << myfile.rdbuf();
     std::string content_after_offset(buffer.str());
     content_after_offset.erase(0, static_cast<unsigned long>(offset));
-    if (offset > content_after_offset.length() - 1)
-        throw Offset_out_of_range("Could not insert into file", (unsigned int) (content_after_offset.length() - 1));
+    if (offset + 1 > content_after_offset.length())
+        throw Offset_out_of_range("Could not insert into file", (int) (content_after_offset.length() - 1));
     myfile.seekp(offset, std::ios::beg);
     myfile << to_insert;
     myfile << content_after_offset;
@@ -106,6 +107,10 @@ void *get_in_addr(struct sockaddr *sa) {
     return &(((struct sockaddr_in6 *) sa)->sin6_addr);
 }
 
+std::string utils::get_in_addr_port_str(const sockaddr_storage &sock_storage) {
+    return get_in_addr_str(&sock_storage).append(":").append(std::to_string(get_in_port(&sock_storage)));
+}
+
 std::string utils::get_in_addr_str(sockaddr_storage const *sock_storage) {
     char s[INET6_ADDRSTRLEN];
     inet_ntop(sock_storage->ss_family, get_in_addr((struct sockaddr *) sock_storage), s, sizeof s);
@@ -118,8 +123,9 @@ std::string utils::get_in_addr_str(sockaddr_storage const *sock_storage) {
  * @return
  */
 int utils::get_in_port(sockaddr_storage const *sock_storage) {
-    if (((sockaddr *) sock_storage)->sa_family == AF_INET) return (((struct sockaddr_in *) sock_storage)->sin_port);
-    return (((struct sockaddr_in6 *) sock_storage)->sin6_port);
+    if (((sockaddr *) sock_storage)->sa_family == AF_INET)
+        return ntohs((((struct sockaddr_in *) sock_storage)->sin_port));
+    return ntohs((((struct sockaddr_in6 *) sock_storage)->sin6_port));
 }
 
 void utils::ms_to_s_usec(const int ms, int &s, int &usec) {

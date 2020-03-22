@@ -9,37 +9,40 @@
 #include <stdexcept>
 #include <cstring> //for memcpy
 #include "spdlog/spdlog.h"
+#include "spdlog/fmt/bin_to_hex.h"
 
 using constants::Service_type;
 
-/** Calls the function execution the service associated with the service type
+/** Calls the function executing the service associated with the service type
  *
  * @param[in] service_type enum specifying which service to execute
  */
-void Handler::service(Service_type service_type, const UdpServer_linux &server, unsigned char *message) {
-    BytePtr raw_content;
-    int raw_length;
+void Handler::service(Service_type service_type, const UdpServer_linux &server, unsigned char *complete_raw_content,
+                      BytePtr &raw_reply, unsigned int &raw_reply_length) {
+    unsigned char *raw_content_wo_servno = complete_raw_content + 4; //TODO use this later
     switch (service_type) {
         case Service_type::read: {
-            service_read(message, raw_content, raw_length);
+            service_read(raw_content_wo_servno, raw_reply, raw_reply_length);
             break;
         }
         case Service_type::register_client: {
-            service_register_client(message, raw_content, raw_length, server.get_client_address());
+            service_register_client(raw_content_wo_servno, raw_reply, raw_reply_length,
+                                    server.get_client_address());
             break;
         }
         case Service_type::insert: {
-            service_insert(message, raw_content, raw_length);
+            std::string path_string;
+            service_insert(raw_content_wo_servno, raw_reply, raw_reply_length, path_string);
+            if (!path_string.empty()) notify_registered_clients(path_string, server);
             break;
         }
         default: {
             spdlog::error("Service could not be identified!");
         }
     }
-    //TODO send reply
 }
 
-void Handler::service_read(unsigned char *message, BytePtr &raw_result, int &result_length) {
+void Handler::service_read(unsigned char *message, BytePtr &raw_result, unsigned int &result_length) {
     int offset, count;
     std::string path_string;
     utils::unpack(message, path_string, offset, count);
@@ -48,39 +51,49 @@ void Handler::service_read(unsigned char *message, BytePtr &raw_result, int &res
     try {
         std::string file_content;
         utils::read_file_to_string_cached(path, file_content, offset, count);
-        result_length = (int) utils::pack(raw_result, file_content);
+        result_length = utils::pack(raw_result, constants::SUCCESS, file_content);
     } catch (const File_does_not_exist &e) {
-        //TODO
+        result_length = utils::pack(raw_result, constants::FILE_DOES_NOT_EXIST);
     } catch (const Offset_out_of_range &e) {
-
+        result_length = utils::pack(raw_result, constants::OFFSET_OUT_OF_BOUNDS);
     }
 }
 
-void Handler::service_insert(unsigned char *message, BytePtr &raw_result, int &result_length) {
+/**
+ *
+ * @param message
+ * @param raw_result
+ * @param result_length
+ * @param path_string[out] path_string to modified path, empty string if not successful
+ */
+void
+Handler::service_insert(unsigned char *message, BytePtr &raw_result, unsigned int &result_length,
+                        std::string &path_string) {
     int offset;
-    std::string path_string, to_write;
-    utils::unpack(message, path_string, offset, to_write);
+    std::string content_to_write;
+    utils::unpack(message, path_string, offset, content_to_write);
     path path(constants::FILE_DIR_PATH + path_string);
 
-    string content_to_write{"Test insert"};
     try {
         utils::insert_to_file(path, content_to_write, offset);
-        //TODO send ack
+        result_length = utils::pack(raw_result, constants::SUCCESS);
     } catch (const File_does_not_exist &e) {
-
+        result_length = utils::pack(raw_result, constants::FILE_DOES_NOT_EXIST);
+        path_string = "";
     } catch (const Offset_out_of_range &e) {
-
+        result_length = utils::pack(raw_result, constants::OFFSET_OUT_OF_BOUNDS);
+        path_string = "";
     }
 }
 
 void
-Handler::service_register_client(unsigned char *message, BytePtr &raw_result, int &result_length,
+Handler::service_register_client(unsigned char *message, BytePtr &raw_result, unsigned int &result_length,
                                  const sockaddr_storage &client) {
     std::string path_string;
     int mon_interval;
     utils::unpack(message, path_string, mon_interval);
     registered_clients[path_string].push_back(MonitoringClient{client, mon_interval});
-    //TODO reply some message
+    result_length = (int) utils::pack(raw_result, constants::SUCCESS);
 }
 
 void Handler::notify_registered_clients(const std::string &filename, const UdpServer_linux &server) {
@@ -92,19 +105,25 @@ void Handler::notify_registered_clients(const std::string &filename, const UdpSe
         if (it->expired()) file_reg_clients.erase(it);
         else {
             //TODO send notification message to client
-            fprintf(stdout, "Send notification to client");
+            std::string file_content;
+            utils::read_file_to_string(path{filename}, &file_content);
+            BytePtr raw_content;
+            unsigned int raw_length = utils::pack(raw_content, filename, file_content);
+            send_complete_message(server, raw_content.get(), raw_length, constants::FILE_WAS_MODIFIED,
+                                  it->getAddress());
+            spdlog::info("Sent notification to client, that file {} has changed", filename);
         }
     }
 
 }
 
 void
-Handler::store_message(const sockaddr_storage &client_address, const int requestID, const BytePtr message,
+Handler::store_message(const sockaddr_storage &client_address, const unsigned int requestID, const BytePtr message,
                        const size_t len) {
     stored_messages[client_address][requestID] = MessagePair{message, len};
 }
 
-bool Handler::is_duplicate_request(const sockaddr_storage *client_address, const int requestID) {
+bool Handler::is_duplicate_request(const sockaddr_storage *client_address, const unsigned int requestID) {
     if (0 == stored_messages.count(*client_address)) return false;
 
     return !(0 == stored_messages[*client_address].count(requestID));
@@ -123,32 +142,49 @@ void Handler::receive_handle_message(UdpServer_linux &server, const int semantic
             timeout_times.push(te);
         }
     }
-    auto next_timeout = std::get<0>(timeout_times.top());
+    std::chrono::time_point<std::chrono::steady_clock> *next_timeout_ptr;
+    if (!timeout_times.empty()) {
+        auto next_timeout = std::get<0>(timeout_times.top());
+        next_timeout_ptr = &next_timeout;
+    } else next_timeout_ptr = nullptr;
+
 
     unsigned char recvd_msg[MAX_PACKET_SIZE];
 
-    receive_specific_packet(server, semantic, nullptr, 0, 0, recvd_msg, &next_timeout);
+    receive_specific_packet(server, semantic, nullptr, 0, 0, recvd_msg, next_timeout_ptr);
 
-    int requestID, overall_size, fragment_no;
+    unsigned int requestID, overall_size, fragment_no;
     unpack_header(recvd_msg, requestID, overall_size, fragment_no);
     const sockaddr_storage &client_address = server.get_client_address();
-    BytePtr message = BytePtr(new unsigned char[(unsigned int) overall_size]);
-    int fragments_expected = overall_size % MAX_CONTENT_SIZE + 1;
-    int cur_frag_no = 0;
+    BytePtr raw_content = BytePtr(new unsigned char[overall_size]);
+    unsigned int fragments_expected = overall_size / MAX_CONTENT_SIZE + 1;
+    unsigned int cur_frag_no = 0;
     size_t cur_len = MAX_PACKET_SIZE;
     do {
-        if (cur_frag_no == fragments_expected - 1) cur_len = overall_size % MAX_CONTENT_SIZE;
-        memcpy(&message[cur_frag_no * MAX_CONTENT_SIZE], recvd_msg + HEADER_SIZE, cur_len);
+        if (cur_frag_no + 1 == fragments_expected) cur_len = overall_size % MAX_CONTENT_SIZE;
+        memcpy(&raw_content[cur_frag_no * MAX_CONTENT_SIZE], recvd_msg + HEADER_SIZE, cur_len);
         ++cur_frag_no;
-        receive_specific_packet(server, semantic, &client_address, requestID, fragment_no, recvd_msg,
-                                constants::FRAG_TIMEOUT);
+        if (cur_frag_no < fragments_expected)
+            if (DID_NOT_RECEIVE ==
+                receive_specific_packet(server, semantic, &client_address, requestID, cur_frag_no, recvd_msg,
+                                        constants::FRAG_TIMEOUT)) {
+                spdlog::warn("Did not receive expected packet, abort receive operation.");
+                //TODO wrong packet received
+                return;
+            }
     } while (cur_frag_no < fragments_expected);
 
-    //unsigned int service_no = utils::unpacku32(message.get());
-    //TODO
-    // service(constants::service_codes.at(service_no), server, message.get());
+    BytePtr raw_reply;
+    unsigned int raw_reply_length;
+    unsigned int service_no;
+    utils::unpack(raw_content.get(), service_no);
+    service(constants::service_codes.at((int) service_no), server, raw_content.get(), raw_reply, raw_reply_length);
 
-    if (semantic == constants::ATMOST) store_message(client_address, requestID, message, (unsigned int) overall_size);
+    send_complete_message(server, raw_reply.get(), raw_reply_length, requestID, client_address);
+    spdlog::info("Reply for #{} sent to {}", requestID, utils::get_in_addr_port_str(client_address));
+
+    if (semantic == constants::ATMOST)
+        store_message(client_address, requestID, raw_content, (unsigned int) overall_size);
 }
 
 /** Given a buffer for raw content to send and its length, send the eventuallz fragmented message
@@ -159,24 +195,24 @@ void Handler::receive_handle_message(UdpServer_linux &server, const int semantic
  * @param requestID
  * @param receiver
  */
-void Handler::send_complete_message(const UdpServer_linux &server, const unsigned char *raw_content_buf, size_t len,
-                                    int requestID, const sockaddr_storage &receiver) {
+void Handler::send_complete_message(const UdpServer_linux &server, unsigned char *const raw_content_buf, size_t len,
+                                    unsigned int requestID, const sockaddr_storage &receiver) {
     BytePtr result;
     BytePtr partial_header;
     unsigned int partial_header_len = utils::pack(partial_header, requestID, (int) len);
 
     size_t cur_content_len = MAX_CONTENT_SIZE;
-    unsigned int fragments_to_send = len % MAX_CONTENT_SIZE + 1;
+    unsigned int fragments_to_send = (unsigned int) len / MAX_CONTENT_SIZE + 1;
     for (unsigned int cur_frag_no = 0; cur_frag_no < fragments_to_send; ++cur_frag_no) {
         if (cur_frag_no == fragments_to_send - 1) cur_content_len = len % MAX_CONTENT_SIZE;
 
-        utils::pack(result, partial_header_len, partial_header.get(), cur_frag_no, (unsigned int) cur_content_len,
-                    raw_content_buf + cur_frag_no * MAX_CONTENT_SIZE);
-        server.send_msg(result.get(), cur_content_len + MAX_PACKET_SIZE, &receiver);
+        utils::pack(result, partial_header_len, partial_header.get(), cur_frag_no,
+                    (unsigned int) cur_content_len, raw_content_buf + cur_frag_no * MAX_CONTENT_SIZE);
+        server.send_packet(result.get(), cur_content_len + HEADER_SIZE, &receiver);
     }
 }
 
-MessagePair Handler::retrieve_stored_message(const sockaddr_storage &client_address, int requestID) {
+MessagePair Handler::retrieve_stored_message(const sockaddr_storage &client_address, unsigned int requestID) {
     return stored_messages[client_address][requestID];
 }
 
@@ -196,20 +232,21 @@ MessagePair Handler::retrieve_stored_message(const sockaddr_storage &client_addr
  * @return status code
  */
 int Handler::receive_specific_packet(UdpServer_linux &server, int semantic, const sockaddr_storage *const exp_address,
-                                     int exp_requestID, int exp_fragment_no, unsigned char *dest_buf,
-                                     const TimeStamp *const timeout_time) {
-    while (std::chrono::steady_clock::now() > *timeout_time) {
+                                     unsigned int exp_requestID, unsigned int exp_fragment_no, unsigned char *dest_buf,
+                                     TimeStamp *const timeout_time) {
+    bool no_timeout = nullptr == timeout_time;
+    while (no_timeout || std::chrono::steady_clock::now() > *timeout_time) {
         int s, usec;
-        utils::future_duration_to_s_usec(*timeout_time, s, usec);
+        if (no_timeout) s = usec = -1;
+        else utils::future_duration_to_s_usec(*timeout_time, s, usec);
         int n = server.receive_msg(buffer_mem, s, usec);
-        if (n > 0) {
-            unsigned char *cur = buffer_mem;
-            int requestID, overall_size, fragment_no;
+        if (n >= HEADER_SIZE) {
+            unsigned int requestID, overall_size, fragment_no;
             unpack_header(buffer_mem, requestID, overall_size, fragment_no);
             const sockaddr_storage &client_address = server.get_client_address();
 
             if (semantic == constants::ATMOST) {
-                if (is_ACK()) {
+                if (is_ACK(buffer_mem + HEADER_SIZE)) {
                     handle_ACK();
                     continue;
                 }
@@ -236,6 +273,8 @@ int Handler::receive_specific_packet(UdpServer_linux &server, int semantic, cons
                 //TODO tell sender that server is busy
                 continue;
             }
+        } else if (0 < n && n < HEADER_SIZE) {
+            spdlog::warn("Received message with size {} < HEADER_SIZE", n);
         } else if (TIMEOUT == n) {
             return DID_NOT_RECEIVE;
         }
@@ -244,21 +283,28 @@ int Handler::receive_specific_packet(UdpServer_linux &server, int semantic, cons
 }
 
 int Handler::receive_specific_packet(UdpServer_linux &server, int semantic, const sockaddr_storage *const exp_address,
-                                     int exp_requestID, int exp_fragment_no, unsigned char *dest_buf,
+                                     unsigned int exp_requestID, unsigned int exp_fragment_no, unsigned char *dest_buf,
                                      int timeout_ms) {
     auto timeout_time = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_ms);
     return receive_specific_packet(server, semantic, exp_address, exp_requestID, exp_fragment_no, dest_buf,
                                    &timeout_time);
 }
 
-bool Handler::is_ACK() {
-    return false;
+bool Handler::is_ACK(unsigned char *raw_content) {
+    int serv_no;
+    utils::unpack(raw_content, serv_no);
+    return 7 == serv_no;
 }
 
 void Handler::handle_ACK() {
 
 }
 
-void Handler::unpack_header(const unsigned char *buf, int &requestID, int &overall_size, int &fragment_no) {
+void Handler::unpack_header(unsigned char *buf, unsigned int &requestID, unsigned int &overall_size,
+                            unsigned int &fragment_no) {
     utils::unpack(buf, requestID, overall_size, fragment_no);
+}
+
+Handler::~Handler() {
+
 }

@@ -4,6 +4,7 @@
 #include "utils/utils.hpp"
 #include "spdlog/spdlog.h"
 #include "UdpServer_linux.hpp"
+#include "Handler.hpp"
 //#include "globalvar.hpp"
 
 using std::cout;
@@ -153,6 +154,11 @@ int main(int argc, char **argv) {
     }
 
     UdpServer_linux server{port_no, failure_rate};
+    Handler handler{};
+
+    while (true) {
+        handler.receive_handle_message(server, semantic);
+    }
 
     return 0;
 }

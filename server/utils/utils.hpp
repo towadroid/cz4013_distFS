@@ -30,7 +30,7 @@ namespace utils {
 
     void read_file_to_string_cached(const path &path, std::string &content, int offset, int count);
 
-    int insert_to_file(const path &path, std::string to_insert, int offset);
+    int insert_to_file(const path &path, std::string to_insert, unsigned int offset);
 
     int get_in_port(sockaddr_storage const *sock_storage);
 
@@ -41,6 +41,14 @@ namespace utils {
     void future_duration_to_s_usec(const std::chrono::time_point<std::chrono::steady_clock> &d, int &s, int &usec);
 
     bool is_similar_sockaddr_storage(const sockaddr_storage &a, const sockaddr_storage &b);
+
+    std::string get_in_addr_port_str(const sockaddr_storage &sock_storage);
+
+    namespace internals2 {
+        void calculate_bounds(int &lower, int &upper, int offset, int count, int chunk_size);
+    }
+
+
 }
 
 

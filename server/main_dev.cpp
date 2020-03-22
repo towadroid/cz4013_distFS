@@ -50,14 +50,16 @@ void testUdp(int sec = -1, int usec = -1) {
     utils::pack(packed, msg);
     size_t len = 4 + msg.length();
     //std::cout <<  client_address.sin_port;
-    serv.send_msg(packed.get(), len);
+    serv.send_packet(packed.get(), len);
 }
 
 void executeHandler() {
     UdpServer_linux server(2302);
     unsigned char buffer[1024];
     Handler h{};
-    h.service(constants::service_codes.at(1), server, buffer);
+    BytePtr raw_reply;
+    unsigned int len;
+    h.service(constants::service_codes.at(1), server, buffer, raw_reply, len);
 }
 
 void logger() {
@@ -72,7 +74,7 @@ void logger() {
 }
 
 int main() {
-    spdlog::set_level(spdlog::level::debug);
+    spdlog::set_level(spdlog::level::trace);
     //readfile();
     //readfile_cached();
     //insertfile();
@@ -89,6 +91,6 @@ int main() {
 
     BytePtr test;
     unsigned char a[2];
-    utils::pack(test, (unsigned int) 2, (const unsigned char *) a);
+    utils::pack(test, (unsigned int) 2, (unsigned char *) a);
 
 }

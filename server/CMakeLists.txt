@@ -26,11 +26,11 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(googletest spdlog)
 ######
 
-add_executable(server main.cpp constants.hpp globalvar.hpp UdpServer_linux.cpp UdpServer_linux.hpp utils/utils.cpp utils/utils.hpp Handler.cpp Handler.hpp MonitoringClient.cpp MonitoringClient.hpp HelperClasses.hpp utils/packing.cpp utils/packing.hpp)
+add_executable(server main.cpp constants.hpp globalvar.hpp UdpServer_linux.cpp UdpServer_linux.hpp utils/utils.cpp utils/utils.hpp Handler.cpp Handler.hpp MonitoringClient.cpp MonitoringClient.hpp HelperClasses.hpp utils/packing.cpp utils/packing.hpp utils/packing_template_impl.hpp)
 
-add_executable(develop main_dev.cpp constants.hpp globalvar.hpp UdpServer_linux.cpp UdpServer_linux.hpp utils/utils.cpp utils/utils.hpp Handler.cpp Handler.hpp MonitoringClient.cpp MonitoringClient.hpp HelperClasses.hpp utils/packing.cpp utils/packing.hpp)
+add_executable(develop main_dev.cpp constants.hpp globalvar.hpp UdpServer_linux.cpp UdpServer_linux.hpp utils/utils.cpp utils/utils.hpp Handler.cpp Handler.hpp MonitoringClient.cpp MonitoringClient.hpp HelperClasses.hpp utils/packing.cpp utils/packing.hpp utils/packing_template_impl.hpp)
 
-add_executable(newtest constants.hpp globalvar.hpp UdpServer_linux.cpp UdpServer_linux.hpp utils/utils.cpp utils/utils.hpp Handler.cpp Handler.hpp MonitoringClient.cpp MonitoringClient.hpp server_tests/basic_tests/unit_test1.cpp server_tests/basic_tests/utils_test.cpp HelperClasses.hpp utils/packing.cpp utils/packing.hpp)
+add_executable(tests constants.hpp globalvar.hpp UdpServer_linux.cpp UdpServer_linux.hpp utils/utils.cpp utils/utils.hpp Handler.cpp Handler.hpp MonitoringClient.cpp MonitoringClient.hpp server_tests/basic_tests/unit_test1.cpp server_tests/basic_tests/utils_test.cpp HelperClasses.hpp utils/packing.cpp utils/packing.hpp server_tests/handler_tests/handler_test.cpp server_tests/mock_classes/MockHandler.hpp utils/packing_template_impl.hpp server_tests/basic_tests/cache_bounds.cpp server_tests/mock_classes/MockUdpServer_linux.hpp)
 
 spdlog_enable_warnings(server)
 target_link_libraries(server PRIVATE spdlog)
@@ -38,5 +38,5 @@ target_link_libraries(server PRIVATE spdlog)
 spdlog_enable_warnings(develop)
 target_link_libraries(develop PRIVATE spdlog)
 
-spdlog_enable_warnings(newtest)
-target_link_libraries(newtest PRIVATE spdlog gtest_main)
+spdlog_enable_warnings(tests)
+target_link_libraries(tests PRIVATE spdlog gtest_main gmock_main)

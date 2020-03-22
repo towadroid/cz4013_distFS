@@ -42,7 +42,7 @@ void packin(int n, unsigned char *buf, const T x) {
     }
 }
 
-unsigned int internals::pack(unsigned char *result) {
+unsigned int internals::pack(unsigned char *) {
     return 0;
 }
 
@@ -99,17 +99,17 @@ T unpackin(int n, const unsigned char *buf) {
     return result;
 }
 
-unsigned int internals::unpack(const unsigned char *result, char &a) {
+unsigned int internals::unpack(unsigned char *result, char &a) {
     a = (char) *result;
     return calc_size(a);
 }
 
-unsigned int internals::unpack(const unsigned char *result, int &a) {
+unsigned int internals::unpack(unsigned char *result, int &a) {
     a = unpackin<int>(32, result);
     return calc_size(a);
 }
 
-unsigned int internals::unpack(const unsigned char *result, unsigned int &a) {
+unsigned int internals::unpack(unsigned char *result, unsigned int &a) {
     a = unpackin<unsigned int>(32, result);
     return calc_size(a);
 }
@@ -119,7 +119,7 @@ unsigned int internals::unpack(const unsigned char *result, unsigned int &a) {
  * @param[in] buf pointer to a buffer, first four bytes indicate length of following string
  * @return
  */
-unsigned int internals::unpack(const unsigned char *result, std::string &a) {
+unsigned int internals::unpack(unsigned char *result, std::string &a) {
     unsigned int n;
     unpack(result, n);
     a = std::string(reinterpret_cast<const char *>(result + 4), n);

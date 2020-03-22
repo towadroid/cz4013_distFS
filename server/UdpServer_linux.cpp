@@ -113,18 +113,21 @@ int UdpServer_linux::receive_msg(unsigned char *buf, int sec, int usec) {
 
 }
 
-void UdpServer_linux::send_msg(unsigned char const *buf, size_t len) const {
-    send_msg(buf, len, &client_address);
+void UdpServer_linux::send_packet(unsigned char const *buf, size_t len) const {
+    send_packet(buf, len, &client_address);
 }
 
 const sockaddr_storage &UdpServer_linux::get_client_address() const {
     return client_address;
 }
 
-void UdpServer_linux::send_msg(const unsigned char *buf, size_t len, const sockaddr_storage *receiver) const {
+void UdpServer_linux::send_packet(const unsigned char *buf, size_t len, const sockaddr_storage *receiver) const {
     int n = (int) sendto(sockfd, buf, len, MSG_CONFIRM, (const sockaddr *) receiver, sizeof(*receiver));
     if (n != (int) len) {
-        if (-1 == n) spdlog::error("send_msg");
+        if (-1 == n) spdlog::error("send_packet");
         else spdlog::error("Could only send {} bytes out of {}", n, len);
+    } else {
+        spdlog::trace("Sent packet ({} bytes) to {} with content: {:X}", len, utils::get_in_addr_port_str(*receiver),
+                      spdlog::to_hex(buf, buf + len));
     }
 }

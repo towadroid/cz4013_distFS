@@ -89,7 +89,7 @@ TEST(Packing, pack_variadic_template) {
 
     BytePtr tmp;
     BytePtr result_ptr;
-    utils::pack(result_ptr, a, one, two, b, (unsigned int) 16, (const unsigned char *) bla, three);
+    utils::pack(result_ptr, a, one, two, b, (unsigned int) 16, bla, three);
 
     unsigned char *result = result_ptr.get();
 
@@ -135,4 +135,11 @@ TEST(Packing, pack_variadic_template) {
     EXPECT_EQ(n, n2);
     EXPECT_EQ(b, b2);
     EXPECT_EQ(three, three2);
+}
+
+TEST(PACKING, simple_int) {
+    int n = 35;
+    BytePtr a;
+    utils::pack(a, n);
+    printf("%X %X %X %X", a[0], a[1], a[2], a[3]);
 }
