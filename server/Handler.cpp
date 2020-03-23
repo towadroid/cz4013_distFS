@@ -36,9 +36,31 @@ void Handler::service(Service_type service_type, const UdpServer_linux &server, 
             if (!path_string.empty()) notify_registered_clients(path_string, server);
             break;
         }
+        case Service_type::remove_content: {
+            std::string path_string;
+            service_remove_all_content(raw_content_wo_servno, raw_reply, raw_reply_length, path_string);
+            if (!path_string.empty()) notify_registered_clients(path_string, server);
+            break;
+        }
+        case Service_type::remove_last_char: {
+            std::string path_string;
+            service_remove_last_char(raw_content_wo_servno, raw_reply, raw_reply_length, path_string);
+            if (!path_string.empty()) notify_registered_clients(path_string, server);
+            break;
+        }
+        case Service_type::file_mod_time: {
+            //TODO implement
+            break;
+        }
+        case Service_type::ack_recvd_reply: {
+            //TODO what??
+            break;
+        }
+
         default: {
             spdlog::error("Service could not be identified!");
         }
+
     }
 }
 
@@ -93,7 +115,53 @@ Handler::service_register_client(unsigned char *message, BytePtr &raw_result, un
     int mon_interval;
     utils::unpack(message, path_string, mon_interval);
     registered_clients[path_string].push_back(MonitoringClient{client, mon_interval});
-    result_length = (int) utils::pack(raw_result, constants::SUCCESS);
+    result_length = utils::pack(raw_result, constants::SUCCESS);
+}
+
+/**
+ *
+ * @param message
+ * @param raw_result
+ * @param result_length
+ * @param path_string[out] path_string to modified path, empty string if not successful / no modification
+ */
+void
+Handler::service_remove_all_content(unsigned char *message, BytePtr &raw_result, unsigned int &result_length,
+                                    std::string &path_string) {
+    std::string path_string_intern;
+    utils::unpack(message, path_string_intern);
+    try {
+        utils::remove_content_from_file(path{path_string_intern});
+    } catch (const File_does_not_exist &e) {
+        result_length = utils::pack(raw_result, constants::FILE_DOES_NOT_EXIST);
+        path_string = "";
+    } catch (const File_already_empty &e) {
+        path_string = "";
+    }
+    result_length = utils::pack(raw_result, constants::SUCCESS);
+}
+
+/**
+ *
+ * @param message
+ * @param raw_result
+ * @param result_length
+ * @param path_string[out] path_string to modified path, empty string if not successful / no modification
+ */
+void
+Handler::service_remove_last_char(unsigned char *message, BytePtr &raw_result, unsigned int &result_length,
+                                  std::string &path_string) {
+    std::string path_string_intern;
+    utils::unpack(message, path_string_intern);
+    try {
+        utils::remove_last_char(path{path_string_intern});
+    } catch (const File_does_not_exist &e) {
+        result_length = utils::pack(raw_result, constants::FILE_DOES_NOT_EXIST);
+        path_string = "";
+    } catch (const File_already_empty &e) {
+        path_string = "";
+    }
+    result_length = utils::pack(raw_result, constants::SUCCESS);
 }
 
 void Handler::notify_registered_clients(const std::string &filename, const UdpServer_linux &server) {

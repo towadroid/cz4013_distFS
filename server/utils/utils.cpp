@@ -71,7 +71,7 @@ void utils::read_file_to_string_cached(const path &path, std::string &content, i
     delete[] byte_content;
 }
 
-/**Write a string into a file.
+/**Write a string into a file at a specific position, previously following content is pushed back
  *
  * The string is written to the location specified by offset. Offset is used relative to the beginning of the file.
  *
@@ -81,20 +81,45 @@ void utils::read_file_to_string_cached(const path &path, std::string &content, i
  * @return 0 if successful
  */
 int utils::insert_to_file(const path &path, std::string to_insert, unsigned int offset) {
-    if (!std::filesystem::exists(path)) throw File_does_not_exist("Could no insert into file", path);
+    if (!std::filesystem::exists(path)) throw File_does_not_exist("Could not insert into file", path);
     std::fstream myfile(path); // std::ios::in | std::ios::out by default
     if (!myfile.is_open()) throw std::runtime_error("Could not open file.");
     //save existing old content after offset first
     std::stringstream buffer;
     buffer << myfile.rdbuf();
-    std::string content_after_offset(buffer.str());
-    content_after_offset.erase(0, static_cast<unsigned long>(offset));
-    if (offset + 1 > content_after_offset.length())
-        throw Offset_out_of_range("Could not insert into file", (int) (content_after_offset.length() - 1));
+    std::string content(buffer.str());
+    if (offset > content.length())
+        throw Offset_out_of_range("Could not insert into file", (int) content.length());
+    content.erase(0, static_cast<unsigned long>(offset));
     myfile.seekp(offset, std::ios::beg);
     myfile << to_insert;
-    myfile << content_after_offset;
+    myfile << content;
     return 0;
+}
+
+void utils::remove_content_from_file(const path &path) {
+    std::string content;
+    read_file_to_string(path, &content);
+    if (content.length() == 0)
+        throw File_already_empty("Tried to remove content from already empty file", path.string());
+
+    std::ofstream ofs;
+    ofs.open(path, std::ofstream::out |
+                   std::ofstream::trunc); //truncate: any contents that existed in the file before it is open are discarded.
+}
+
+void utils::remove_last_char(const path &path) {
+    std::string content;
+    read_file_to_string(path, &content);
+    if (content.length() == 0)
+        throw File_already_empty("Tried to remove last char from already empty file", path.string());
+
+    content.pop_back();
+    if (!std::filesystem::exists(path)) throw File_does_not_exist("Could not insert into file", path);
+    std::ofstream myfile;
+    myfile.open(path, std::ios::out | std::ios::trunc);
+    if (!myfile.is_open()) throw std::runtime_error("Could not open file.");
+    myfile << content;
 }
 
 /** Get sockaddr, IPv4 or IPv6:

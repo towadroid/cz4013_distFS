@@ -89,8 +89,4 @@ int main() {
     Handler h{};
     std::unordered_map<sockaddr_storage, int, SockaddrStor_Hasher, SockaddrStor_Equal> um{};
 
-    BytePtr test;
-    unsigned char a[2];
-    utils::pack(test, (unsigned int) 2, (unsigned char *) a);
-
 }

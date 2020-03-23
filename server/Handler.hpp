@@ -62,6 +62,12 @@ private:
     void service_register_client(unsigned char *message, BytePtr &raw_result, unsigned int &result_length,
                                  const sockaddr_storage &client);
 
+    void service_remove_all_content(unsigned char *message, BytePtr &raw_result, unsigned int &result_length,
+                                    string &path_string);
+
+    void service_remove_last_char(unsigned char *message, BytePtr &raw_result, unsigned int &result_length,
+                                  string &path_string);
+
     //------------------------ stored_messages interaction ------------
     void store_message(const sockaddr_storage &client_address, const unsigned int requestID, const BytePtr message,
                        const size_t len);
@@ -90,7 +96,6 @@ private:
     int receive_specific_packet(UdpServer_linux &server, int semantic, const sockaddr_storage *const exp_address,
                                 unsigned int exp_requestID, unsigned int exp_fragment_no, unsigned char *dest_buf,
                                 int timeout_ms);
-
 };
 
 

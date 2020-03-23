@@ -30,7 +30,7 @@ add_executable(server main.cpp constants.hpp globalvar.hpp UdpServer_linux.cpp U
 
 add_executable(develop main_dev.cpp constants.hpp globalvar.hpp UdpServer_linux.cpp UdpServer_linux.hpp utils/utils.cpp utils/utils.hpp Handler.cpp Handler.hpp MonitoringClient.cpp MonitoringClient.hpp HelperClasses.hpp utils/packing.cpp utils/packing.hpp utils/packing_template_impl.hpp)
 
-add_executable(tests constants.hpp globalvar.hpp UdpServer_linux.cpp UdpServer_linux.hpp utils/utils.cpp utils/utils.hpp Handler.cpp Handler.hpp MonitoringClient.cpp MonitoringClient.hpp server_tests/basic_tests/unit_test1.cpp server_tests/basic_tests/utils_test.cpp HelperClasses.hpp utils/packing.cpp utils/packing.hpp server_tests/handler_tests/handler_test.cpp server_tests/mock_classes/MockHandler.hpp utils/packing_template_impl.hpp server_tests/basic_tests/cache_bounds.cpp server_tests/mock_classes/MockUdpServer_linux.hpp)
+add_executable(tests constants.hpp globalvar.hpp UdpServer_linux.cpp UdpServer_linux.hpp utils/utils.cpp utils/utils.hpp Handler.cpp Handler.hpp MonitoringClient.cpp MonitoringClient.hpp server_tests/basic_tests/utils_test.cpp HelperClasses.hpp utils/packing.cpp utils/packing.hpp server_tests/handler_tests/handler_test.cpp server_tests/mock_classes/MockHandler.hpp utils/packing_template_impl.hpp server_tests/basic_tests/cache_bounds.cpp server_tests/mock_classes/MockUdpServer_linux.hpp server_tests/basic_tests/file_ops.cpp)
 
 spdlog_enable_warnings(server)
 target_link_libraries(server PRIVATE spdlog)

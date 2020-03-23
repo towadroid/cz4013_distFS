@@ -84,4 +84,18 @@ public:
     }
 };
 
+class File_already_empty : std::runtime_error {
+protected:
+    std::string path;
+public:
+    File_already_empty(const std::string &arg, std::string path) : runtime_error(arg), path(std::move(path)) {};
+
+    [[nodiscard]] char const *what() const noexcept override {
+        std::string message{"The file at"};
+        message.append(path);
+        message.append("is already empty!");
+        return message.c_str();
+    }
+};
+
 #endif //SERVER_HELPERCLASSES_HPP
