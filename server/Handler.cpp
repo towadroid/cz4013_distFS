@@ -71,8 +71,7 @@ void Handler::service_read(unsigned char *message, BytePtr &raw_result, unsigned
     path path(constants::FILE_DIR_PATH + path_string);
 
     try {
-        std::string file_content;
-        utils::read_file_to_string_cached(path, file_content, offset, count);
+        std::string file_content = utils::read_file_to_string_cached(path, offset, count);
         result_length = utils::pack(raw_result, constants::SUCCESS, file_content);
     } catch (const File_does_not_exist &e) {
         result_length = utils::pack(raw_result, constants::FILE_DOES_NOT_EXIST);
@@ -173,8 +172,7 @@ void Handler::notify_registered_clients(const std::string &filename, const UdpSe
         if (it->expired()) file_reg_clients.erase(it);
         else {
             //TODO send notification message to client
-            std::string file_content;
-            utils::read_file_to_string(path{filename}, &file_content);
+            std::string file_content = utils::read_file_to_string(path{filename});
             BytePtr raw_content;
             unsigned int raw_length = utils::pack(raw_content, filename, file_content);
             send_complete_message(server, raw_content.get(), raw_length, constants::FILE_WAS_MODIFIED,

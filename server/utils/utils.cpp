@@ -20,14 +20,15 @@
  * @param path
  * @param content
  */
-void utils::read_file_to_string(const path &path, std::string *content) {
+std::string utils::read_file_to_string(const path &path) {
     if (!std::filesystem::exists(path)) throw File_does_not_exist("Could not read from file", path);
     std::ifstream in(path);
     if (!in.is_open()) throw std::runtime_error("Could not open file.");
     std::stringstream buffer;
     buffer << in.rdbuf();
     try {
-        content->assign(buffer.str());
+        std::string content{buffer.str()};
+        return content;
     } catch (const std::length_error &e) {
         // If the resulting string length would exceed the max_size, a length_error exception is thrown.
         spdlog::error("{}; the resulting string length would exceed the max_size", e.what());
@@ -52,7 +53,7 @@ utils::internals2::calculate_bounds(int &lower, int &upper, const int offset, co
     upper = end - end % chunk_size + chunk_size;
 }
 
-void utils::read_file_to_string_cached(const path &path, std::string &content, int offset, int count) {
+std::string utils::read_file_to_string_cached(const path &path, int offset, int count) {
     if (!std::filesystem::exists(path)) throw File_does_not_exist("Could not read from file", path);
     std::ifstream in(path);
     if (!in.is_open()) throw std::runtime_error("Could not open file.");
@@ -67,8 +68,9 @@ void utils::read_file_to_string_cached(const path &path, std::string &content, i
     if (start + actual_read < offset + count)
         throw Offset_out_of_range("Could not read requested file section, offset+count exceeds bounds!",
                                   start + actual_read);
-    content = std::string{(char *) byte_content, (unsigned long) actual_read};
+    std::string content = std::string{(char *) byte_content, (unsigned long) actual_read};
     delete[] byte_content;
+    return content;
 }
 
 /**Write a string into a file at a specific position, previously following content is pushed back
@@ -98,8 +100,7 @@ int utils::insert_to_file(const path &path, std::string to_insert, unsigned int 
 }
 
 void utils::remove_content_from_file(const path &path) {
-    std::string content;
-    read_file_to_string(path, &content);
+    std::string content = read_file_to_string(path);
     if (content.length() == 0)
         throw File_already_empty("Tried to remove content from already empty file", path.string());
 
@@ -109,8 +110,7 @@ void utils::remove_content_from_file(const path &path) {
 }
 
 void utils::remove_last_char(const path &path) {
-    std::string content;
-    read_file_to_string(path, &content);
+    std::string content = read_file_to_string(path);
     if (content.length() == 0)
         throw File_already_empty("Tried to remove last char from already empty file", path.string());
 

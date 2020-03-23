@@ -5,29 +5,38 @@
 #include "gtest/gtest.h"
 #include "../../utils/utils.hpp"
 #include <string>
+#include <fstream>
 #include "../../constants.hpp"
 #include "../../HelperClasses.hpp"
 
+std::filesystem::path create_non_empty_file(std::string file_name) {
+    file_name.insert(0, constants::FILE_DIR_PATH);
+    auto path = std::filesystem::path{file_name};
+    std::ofstream ofs;
+    ofs.open(path, std::ofstream::out | std::ofstream::trunc);
+    ofs << "0123456789\n";
+    for (int i = 0; i < 20; ++i) {
+        ofs << "123456789\n";
+    }
+    return path;
+}
+
 TEST(Rm_all, empty) {
-    std::filesystem::path file_path{constants::FILE_DIR_PATH + "test_ins"};
-    utils::insert_to_file(file_path, std::string{"abc"}, 0); //insert content so that file is not empty
-    utils::remove_content_from_file(file_path);
-    std::string content;
-    utils::read_file_to_string(file_path, &content);
+    auto path = create_non_empty_file(std::string{"test_file"});
+
+    utils::remove_content_from_file(path);
+    std::string content = utils::read_file_to_string(path);
 
     EXPECT_EQ(0, content.length());
 }
 
 TEST(Rm_last_char, empty) {
-    std::filesystem::path file_path{constants::FILE_DIR_PATH + "test_ins"};
-    utils::insert_to_file(file_path, std::string{"abc"}, 0);
-    std::string content;
-    utils::read_file_to_string(file_path, &content);
+    auto path = create_non_empty_file(std::string{"test_file"});
+    std::string content = utils::read_file_to_string(path);
     content.pop_back();
 
-    utils::remove_last_char(file_path);
-    std::string content2;
-    utils::read_file_to_string(file_path, &content2);
+    utils::remove_last_char(path);
+    std::string content2 = utils::read_file_to_string(path);
 
     EXPECT_EQ(content, content2);
 }

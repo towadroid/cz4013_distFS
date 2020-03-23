@@ -69,8 +69,7 @@ private:
                                   string &path_string);
 
     //------------------------ stored_messages interaction ------------
-    void store_message(const sockaddr_storage &client_address, const unsigned int requestID, const BytePtr message,
-                       const size_t len);
+    void store_message(const sockaddr_storage &client_address, unsigned int requestID, BytePtr message, size_t len);
 
 
     MessagePair retrieve_stored_message(const sockaddr_storage &client_address, unsigned int requestID);

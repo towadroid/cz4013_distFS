@@ -30,7 +30,7 @@ void readfile() {
 
 void readfile_cached() {
     std::string a;
-    utils::read_file_to_string_cached(constants::FILE_DIR_PATH + "file1", a, 2, 52);
+    utils::read_file_to_string_cached(constants::FILE_DIR_PATH + "file1", 2, 52);
     cout << a << endl;
 }
 

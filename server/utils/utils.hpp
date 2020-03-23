@@ -27,9 +27,9 @@ namespace utils {
     bool is_expected_size_and_format();
 
     //-------------- file operations ----------------------
-    void read_file_to_string(const path &path, std::string *content);
+    std::string read_file_to_string(const path &path);
 
-    void read_file_to_string_cached(const path &path, std::string &content, int offset, int count);
+    std::string read_file_to_string_cached(const path &path, int offset, int count);
 
     int insert_to_file(const path &path, std::string to_insert, unsigned int offset);
 
