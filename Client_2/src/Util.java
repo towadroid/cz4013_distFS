@@ -8,34 +8,6 @@ import java.util.*;
 
 public class Util {
 
-    public static Map<String, Object> send_and_receive(int request_id, int service_id, String input, Runner runner) throws IOException {
-        runner.socket.setSoTimeout(Constants.TIMEOUT);
-        List<Byte> reply_content;
-        List<List<Byte>> request = marshall(request_id, service_id, input);
-        send_message(request, runner);
-        System.out.println("Request sent");
-        while(true) {
-            try {
-                reply_content = receive_message(runner);
-                System.out.println("Reply received");
-                break;
-            }
-            catch (SocketTimeoutException t) {
-                System.out.println("Request re-sent");
-                send_message(request, runner);
-            }
-        }
-        Map<String, Object> reply = un_marshall(service_id, reply_content);
-
-        if (Constants.AT_MOST_ONCE) {
-            // upon receiving, send acknowledgment
-            List<List<Byte>> ack = marshall(request_id, Constants.ACKNOWLEDGMENT_ID, "");
-            send_message(ack, runner);
-        }
-
-        return reply;
-    }
-
     public static List<List<Byte>> marshall(int request_id, int service_id, String input) {
         String[] arr = input.split( " ");
         return marshall( request_id,  service_id, arr);
@@ -122,7 +94,15 @@ public class Util {
         return message;
     }
 
-    public static int[] get_header(byte[] packet) {
+    public static byte[] to_primitive(List<Byte> in) {
+        byte[] ret = new byte[in.size()];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = in.get(i);
+        }
+        return ret;
+    }
+
+    private static int[] get_header(byte[] packet) {
         int[] header = new int[3];
         header[0] = bytes_to_int(Arrays.copyOfRange(packet, 0, 4));
         header[1] = bytes_to_int(Arrays.copyOfRange(packet, 4, 8));
@@ -131,7 +111,7 @@ public class Util {
     }
 
     // little-endian??
-    public static int bytes_to_int(byte[] bytes) {
+    private static int bytes_to_int(byte[] bytes) {
         return ((bytes[3] & 0xFF) << 0) |
                 ((bytes[2] & 0xFF) << 8) |
                 ((bytes[1] & 0xFF) << 16 ) |
@@ -139,14 +119,14 @@ public class Util {
     }
 
     // little-endian??
-    public static int bytes_to_int(List<Byte> bytes) {
+    private static int bytes_to_int(List<Byte> bytes) {
         return ((bytes.get(3) & 0xFF) << 0) |
                 ((bytes.get(2) & 0xFF) << 8) |
                 ((bytes.get(1) & 0xFF) << 16 ) |
                 ((bytes.get(0) & 0xFF) << 24 );
     }
 
-    public static List<Byte> marshall_to_content(int service_id, List<Pair<String, Integer>> params, String[] values) {
+    private static List<Byte> marshall_to_content(int service_id, List<Pair<String, Integer>> params, String[] values) {
         // raw content: | service_id | content... |
         List<Byte> raw_content = new ArrayList<>();
         raw_content = add_int(service_id, raw_content);
@@ -165,7 +145,7 @@ public class Util {
         return raw_content;
     }
 
-    public static List<List<Byte>> marshall_to_packets(int request_id, List<Byte> raw_content) {
+    private static List<List<Byte>> marshall_to_packets(int request_id, List<Byte> raw_content) {
         int raw_content_size = raw_content.size();
         int total_packets = (int) Math.ceil(raw_content_size * 1.0 / Constants.MAX_PACKET_CONTENT_SIZE);
         List<List<Byte>> message = new ArrayList<>();
@@ -188,25 +168,8 @@ public class Util {
         return message;
     }
 
-    public static byte[] to_primitive(List<Byte> in) {
-        byte[] ret = new byte[in.size()];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = in.get(i);
-        }
-        return ret;
-    }
-
-    public static String get_request_param_string(int service_id) {
-        String ret = "Please enter: ";
-        List<Pair<String, Integer>> params = Constants.get_request_params(service_id);
-        for(Pair<String, Integer> p : params) {
-            ret += (p.getKey() + " ");
-        }
-        return ret;
-    }
-
     // big-endian
-    public static List<Byte> add_int(int num, List<Byte> in) {
+    private static List<Byte> add_int(int num, List<Byte> in) {
         byte[] bytes = new byte[4];
         for (int i = 0; i < 4; i++) {
             bytes[4-i-1] = (byte) (num >>> (i*8));
@@ -214,12 +177,12 @@ public class Util {
         return add_byte_array(in, bytes);
     }
 
-    public static List<Byte> add_string(String str, List<Byte> in) {
+    private static List<Byte> add_string(String str, List<Byte> in) {
         byte[] bytes = str.getBytes();
         return add_byte_array(in, bytes);
     }
 
-    public static List<Byte> add_byte_array(List<Byte> in, byte[] add) {
+    private static List<Byte> add_byte_array(List<Byte> in, byte[] add) {
         for (byte b : add) {
             in.add(b);
         }
@@ -232,7 +195,7 @@ public class Util {
      * @param values
      * @return
      */
-    public static List<List<Byte>> marshall_reply(int request_id, int service_id, String[] values) {
+    private static List<List<Byte>> marshall_reply(int request_id, int service_id, String[] values) {
         List<Pair<String, Integer>> params = Constants.get_successful_reply_params(service_id);
         List<Byte> raw_content = marshall_to_content(service_id, params, values);
         List<List<Byte>> message = marshall_to_packets(request_id, raw_content);

@@ -1,8 +1,14 @@
+import javafx.util.Pair;
+
 import java.io.IOException;
+import java.net.SocketTimeoutException;
+import java.util.List;
+import java.util.Map;
 
 public abstract class Service {
 
     public Runner runner;
+    public int service_id;
 
     public Service(Runner r) {
         runner = r;
@@ -24,5 +30,50 @@ public abstract class Service {
             return null;
         }
     }
+
+    public Map<String, Object> send_and_receive(String input) throws IOException {
+        return send_and_receive(service_id, input);
+    }
+
+    public Map<String, Object> send_and_receive(int service_id, String input) throws IOException {
+        runner.socket.setSoTimeout(Constants.TIMEOUT);
+        List<Byte> reply_content;
+        List<List<Byte>> request = Util.marshall(runner.get_request_id(), service_id, input);
+        Util.send_message(request, runner);
+        System.out.println("Request sent");
+        while(true) {
+            try {
+                reply_content = Util.receive_message(runner);
+                System.out.println("Reply received");
+                break;
+            }
+            catch (SocketTimeoutException t) {
+                System.out.println("Request re-sent");
+                Util.send_message(request, runner);
+            }
+        }
+        Map<String, Object> reply = Util.un_marshall(service_id, reply_content);
+
+        if (Constants.AT_MOST_ONCE) {
+            // upon receiving, send acknowledgment
+            List<List<Byte>> ack = Util.marshall(runner.get_request_id(), Constants.ACKNOWLEDGMENT_ID, "");
+            Util.send_message(ack, runner);
+        }
+
+        runner.increment_request_id();
+        return reply;
+    }
+
+    public String get_request_param_string() {
+        String ret = "Please enter: ";
+        List<Pair<String, Integer>> params = Constants.get_request_params(service_id);
+        for(Pair<String, Integer> p : params) {
+            ret += (p.getKey() + " ");
+        }
+        return ret;
+    }
+
+
+
 
 }

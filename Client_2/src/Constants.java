@@ -14,7 +14,7 @@ public class Constants {
     public static final int MAX_PACKET_SIZE = 256;
     public static final int PACKET_HEADER_SIZE = 12;
     public static final int MAX_PACKET_CONTENT_SIZE = MAX_PACKET_SIZE - PACKET_HEADER_SIZE;
-    public static final int TIMEOUT = 10000;
+    public static final int TIMEOUT = 1000000;
     public static final boolean AT_MOST_ONCE = false;
 
     // Services
