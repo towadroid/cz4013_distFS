@@ -5,9 +5,6 @@ import java.util.Map;
 
 public class Constants {
 
-    public static final String SERVER_NAME = "10.27.135.232";
-    public static final int SERVER_PORT = 2302;
-
     public static final int INT_ID = 0;
     public static final int INT_SIZE = 4;
     public static final int STRING_ID = 1;

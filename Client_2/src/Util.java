@@ -37,7 +37,6 @@ public class Util {
      * @throws IOException from socket receive
      */
 
-    // TODO: check that the fragment number matches
     public static List<Byte> receive_message(Runner runner) throws IOException {
         int total_packets = -1;
         List<Byte> all_content = new ArrayList<>();

@@ -10,11 +10,15 @@ public class Runner {
     InetAddress host;
     DatagramSocket socket;
     private int request_id = 0;
+    private String server_name;
+    private int server_port;
 
-    public Runner() throws UnknownHostException, SocketException {
-        host = InetAddress.getByName(Constants.SERVER_NAME);
+    public Runner(String s_name, int s_port) throws UnknownHostException, SocketException {
         socket = new DatagramSocket();
         scanner = new Scanner(System.in);
+        server_name = s_name;
+        server_port = s_port;
+        host = InetAddress.getByName(server_name);
     }
 
     /**Send one packet to the server
@@ -24,7 +28,7 @@ public class Runner {
     public void send_packet(List<Byte> packet_list) throws IOException{
         byte[] packet = Util.to_primitive(packet_list);
         DatagramPacket request = new DatagramPacket(packet,
-                packet.length, host, Constants.SERVER_PORT);
+                packet.length, host, server_port);
         socket.send(request);
     }
 
@@ -47,7 +51,9 @@ public class Runner {
     }
 
     public static void main(String[] args) throws IOException {
-        Runner runner = new Runner();
+        // Server name: 10.27.135.232
+        // Server port: 2302
+        Runner runner = new Runner(args[0], Integer.parseInt(args[1]));
         while (true) {
             System.out.println(Constants.PROMPT);
             int input = runner.scanner.nextInt();

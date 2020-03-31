@@ -11,7 +11,7 @@ public class TestServer {
         DatagramSocket aSocket = null;
         int counter = 0;
         try{
-            aSocket = new DatagramSocket(Constants.SERVER_PORT);
+            aSocket = new DatagramSocket(2302);
             //bound to host and port
             byte[] buffer = new byte[1000];
             while(true){
