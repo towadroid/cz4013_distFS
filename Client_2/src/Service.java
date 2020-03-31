@@ -31,11 +31,11 @@ public abstract class Service {
         }
     }
 
-    public Map<String, Object> send_and_receive(String input) throws IOException {
+    public Map<String, Object> send_and_receive(String[] input) throws IOException {
         return send_and_receive(service_id, input);
     }
 
-    public Map<String, Object> send_and_receive(int service_id, String input) throws IOException {
+    public Map<String, Object> send_and_receive(int service_id, String[] input) throws IOException {
         runner.socket.setSoTimeout(Constants.TIMEOUT);
         List<Byte> reply_content;
         List<List<Byte>> request = Util.marshall(runner.get_request_id(), service_id, input);
@@ -56,7 +56,7 @@ public abstract class Service {
 
         if (Constants.AT_MOST_ONCE) {
             // upon receiving, send acknowledgment
-            List<List<Byte>> ack = Util.marshall(runner.get_request_id(), Constants.ACKNOWLEDGMENT_ID, "");
+            List<List<Byte>> ack = Util.marshall(runner.get_request_id(), Constants.ACKNOWLEDGMENT_ID, new String[0]);
             Util.send_message(ack, runner);
         }
 
@@ -64,11 +64,14 @@ public abstract class Service {
         return reply;
     }
 
-    public String get_request_param_string() {
-        String ret = "Please enter: ";
+    public String[] get_user_request_values() {
         List<Pair<String, Integer>> params = Constants.get_request_params(service_id);
-        for(Pair<String, Integer> p : params) {
-            ret += (p.getKey() + " ");
+        String[] ret = new String[params.size()];
+        for(int i = 0; i < params.size(); i++) {
+            Pair<String, Integer> p = params.get(i);
+            String prompt =  "Please enter the " + p.getKey() + ": ";
+            System.out.println(prompt);
+            ret[i] = runner.scanner.nextLine();
         }
         return ret;
     }

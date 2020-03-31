@@ -8,11 +8,6 @@ import java.util.*;
 
 public class Util {
 
-    public static List<List<Byte>> marshall(int request_id, int service_id, String input) {
-        String[] arr = input.split( " ");
-        return marshall( request_id,  service_id, arr);
-    }
-
     /** For marshalling requests
      * @param request_id
      * @param service_id
