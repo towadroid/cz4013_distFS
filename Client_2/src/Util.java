@@ -32,29 +32,30 @@ public class Util {
     }
 
     /**Receive an entire message (which could contain many packets)
+     * @param check_request_id check received request ids against this one
      * @param runner
      * @return the content portion of the message
      * @throws IOException from socket receive
      */
 
-    public static List<Byte> receive_message(Runner runner) throws IOException {
+    public static List<Byte> receive_message(int check_request_id, Runner runner) throws IOException {
         int total_packets = -1;
         List<Byte> all_content = new ArrayList<>();
         int current_packet = 0;
         int overall_content_size = -1;
-        int fragment_number = -1;
         while (total_packets == -1 || current_packet != total_packets) {
             byte[] packet = runner.receive_packet();
             int[] header = get_header(packet);
+            int receive_request_id = header[0];
             overall_content_size = header[1];
-            fragment_number = header[2];
-            if (fragment_number != current_packet) {
+            int fragment_number = header[2];
+            if (fragment_number != current_packet || receive_request_id != check_request_id) {
                 throw new SocketTimeoutException();
             }
             if (total_packets == -1) {
                 total_packets = (int) Math.ceil(overall_content_size*1.0/Constants.MAX_PACKET_CONTENT_SIZE);
             }
-            all_content = add_byte_array(all_content, Arrays.copyOfRange(packet, Constants.PACKET_HEADER_SIZE, packet.length));
+            add_byte_array(all_content, Arrays.copyOfRange(packet, Constants.PACKET_HEADER_SIZE, packet.length));
             current_packet++;
         }
         all_content = all_content.subList(0, overall_content_size);

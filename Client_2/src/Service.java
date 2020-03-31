@@ -43,7 +43,7 @@ public abstract class Service {
         System.out.println("Request sent");
         while(true) {
             try {
-                reply_content = Util.receive_message(runner);
+                reply_content = Util.receive_message(runner.get_request_id(), runner);
                 System.out.println("Reply received");
                 break;
             }
