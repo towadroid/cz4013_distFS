@@ -5,7 +5,7 @@ public class Read extends  Service {
 
     public Read(Runner r) {
         super(r);
-        service_id = Constants.READ_REQUEST_ID;
+        service_id = Constants.READ_ID;
     }
 
     @Override

@@ -5,7 +5,7 @@ public class TestService extends Service {
 
     public TestService(Runner r) {
         super(r);
-        service_id = Constants.WRITE_REQUEST_ID;
+        service_id = Constants.WRITE_ID;
     }
 
     @Override

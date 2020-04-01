@@ -14,13 +14,23 @@ public abstract class Service {
         runner = r;
     }
 
-    public abstract void act() throws IOException;
+    public void act() throws IOException {
+        //ask for user input
+        String[] request_values = get_user_request_values();
+        Map<String, Object> reply = send_and_receive(request_values);
+        if ((int) reply.get("status") == 0) {
+            System.out.println("request success");
+        }
+        else {
+            System.out.println("error: " + reply.get("message"));
+        }
+    }
 
     public static Service generate_service(int service_id, Runner r) {
-        if (service_id == Constants.READ_REQUEST_ID) {
+        if (service_id == Constants.READ_ID) {
             return new Read(r);
         }
-        else if (service_id == Constants.WRITE_REQUEST_ID) {
+        else if (service_id == Constants.WRITE_ID) {
             return new Write(r);
         }
         else if (service_id == Constants.TEST_ID) {
