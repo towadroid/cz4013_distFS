@@ -48,8 +48,12 @@ public abstract class Service {
                 break;
             }
             catch (SocketTimeoutException t) {
-                System.out.println("Request re-sent");
+                System.out.println("Timed out; Request re-sent");
                 Util.send_message(request, runner);
+            }
+            catch (CorruptMessageException c) {
+                // may want to wait a bit here?
+                System.out.println("Received corrupt message; Throwing away");
             }
         }
         Map<String, Object> reply = Util.un_marshall(service_id, reply_content);

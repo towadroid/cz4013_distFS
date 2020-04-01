@@ -50,7 +50,7 @@ public class Util {
             overall_content_size = header[1];
             int fragment_number = header[2];
             if (fragment_number != current_packet || receive_request_id != check_request_id) {
-                throw new SocketTimeoutException();
+                throw new CorruptMessageException();
             }
             if (total_packets == -1) {
                 total_packets = (int) Math.ceil(overall_content_size*1.0/Constants.MAX_PACKET_CONTENT_SIZE);

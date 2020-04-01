@@ -12,9 +12,9 @@ public class Read extends  Service {
     public void act() throws IOException {
 
         //ask for user input
-        String[] request_value_string = get_user_request_values();
+        String[] request_values = get_user_request_values();
 
-        Map<String, Object> reply = send_and_receive(request_value_string);
+        Map<String, Object> reply = send_and_receive(request_values);
         int file_content_size = ((String) reply.get("content")).length();
         System.out.println("reply received");
 
