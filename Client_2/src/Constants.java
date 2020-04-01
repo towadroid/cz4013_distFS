@@ -14,9 +14,12 @@ public class Constants {
     public static final int TIMEOUT = 1000000;
     public static final boolean AT_MOST_ONCE = false;
 
-    // Services
-    public static final int SUCCESSFUL_SERVICE_ID = 0;
     public static final int EXIT_ID = 0;
+    public static final int TEST_ID = 99;
+
+    public static final String PROMPT = "Please enter: 0 for exit, 1 for read, 2 for write, 3 for monitor, " +
+            "4 for clear, 5 for trim, 99 for debug";
+
     public static final int READ_REQUEST_ID = 1;
     public static final int WRITE_REQUEST_ID = 2;
     public static final int MONITOR_REQUEST_ID = 3;
@@ -24,36 +27,20 @@ public class Constants {
     public static final int TRIM_REQUEST_ID = 5;
     public static final int EDIT_TIME_REQUEST_ID = 6;
     public static final int ACKNOWLEDGMENT_ID = 7;
-    public static final int TEST_ID = 99;
-
-    public static final String PROMPT = "Please enter: 0 for exit, 1 for read, 2 for write, 3 for monitor, " +
-            "4 for clear, 5 for trim, 99 for debug";
 
     public static final List<Pair<String, Integer>> READ_REQUEST_PARAMS =
             List.of(new Pair<>("pathname", STRING_ID), new Pair<>("offset", INT_ID), new Pair<>("byte_count", INT_ID));
-    public static final List<Pair<String, Integer>> READ_REPLY_PARAMS =
-            List.of(new Pair<>("content", STRING_ID));
     public static final List<Pair<String, Integer>> WRITE_REQUEST_PARAMS =
             List.of(new Pair<>("pathname", STRING_ID), new Pair<>("offset", INT_ID), new Pair<>("content", STRING_ID));
-    public static final List<Pair<String, Integer>> WRITE_REPLY_PARAMS =
-            List.of();
     public static final List<Pair<String, Integer>> MONITOR_REQUEST_PARAMS =
             List.of(new Pair<>("pathname", STRING_ID), new Pair<>("monitor_time", INT_ID));
-    public static final List<Pair<String, Integer>> MONITOR_REPLY_PARAMS =
-            List.of();
     public static final List<Pair<String, Integer>> CLEAR_REQUEST_PARAMS =
             List.of(new Pair<>("pathname", STRING_ID));
-    public static final List<Pair<String, Integer>> CLEAR_REPLY_PARAMS =
-            List.of();
     public static final List<Pair<String, Integer>> TRIM_REQUEST_PARAMS =
             List.of(new Pair<>("pathname", STRING_ID));
-    public static final List<Pair<String, Integer>> TRIM_REPLY_PARAMS =
-            List.of();
     public static final List<Pair<String, Integer>> EDIT_TIME_REQUEST_PARAMS =
             List.of(new Pair<>("pathname", STRING_ID));
-    public static final List<Pair<String, Integer>> EDIT_TIME_REPLY_PARAMS =
-            List.of(new Pair<>("time", INT_ID));
-    public static final List<Pair<String, Integer>> ACKNOWLEDGE_REQUEST_PARAMS =
+    public static final List<Pair<String, Integer>> ACKNOWLEDGE_PARAMS =
             List.of();
 
     public static final Map<Integer, List<Pair<String, Integer>>> REQUEST_PARAMS;
@@ -65,35 +52,79 @@ public class Constants {
                 CLEAR_REQUEST_ID, CLEAR_REQUEST_PARAMS,
                 TRIM_REQUEST_ID, TRIM_REQUEST_PARAMS,
                 EDIT_TIME_REQUEST_ID, EDIT_TIME_REQUEST_PARAMS,
-                ACKNOWLEDGMENT_ID, ACKNOWLEDGE_REQUEST_PARAMS);
+                ACKNOWLEDGMENT_ID, ACKNOWLEDGE_PARAMS
+        );
     }
 
-    public static final Map<Integer, List<Pair<String, Integer>>> SUCCESSFUL_REPLY_PARAMS;
+
+    public static final int SUCCESSFUL_STATUS_ID = 0;
+    public static final List<Pair<String, Integer>> READ_REPLY_PARAMS =
+            List.of(new Pair<>("content", STRING_ID));
+    public static final List<Pair<String, Integer>> WRITE_REPLY_PARAMS =
+            List.of();
+    public static final List<Pair<String, Integer>> MONITOR_REPLY_PARAMS =
+            List.of();
+    public static final List<Pair<String, Integer>> CLEAR_REPLY_PARAMS =
+            List.of();
+    public static final List<Pair<String, Integer>> TRIM_REPLY_PARAMS =
+            List.of();
+    public static final List<Pair<String, Integer>> EDIT_TIME_REPLY_PARAMS =
+            List.of(new Pair<>("time", INT_ID));
+
+    public static final Map<Integer, List<Pair<String, Integer>>> SUCCESSFUL_STATUS_PARAMS;
     static{
-        SUCCESSFUL_REPLY_PARAMS = Map.of(
+        SUCCESSFUL_STATUS_PARAMS = Map.of(
                 READ_REQUEST_ID, READ_REPLY_PARAMS,
                 WRITE_REQUEST_ID, WRITE_REPLY_PARAMS,
                 MONITOR_REQUEST_ID, MONITOR_REPLY_PARAMS,
                 CLEAR_REQUEST_ID, CLEAR_REPLY_PARAMS,
                 TRIM_REQUEST_ID, TRIM_REPLY_PARAMS,
-                EDIT_TIME_REQUEST_ID, EDIT_TIME_REPLY_PARAMS);
+                EDIT_TIME_REQUEST_ID, EDIT_TIME_REPLY_PARAMS
+        );
     }
 
-    public static final Map<Integer, String> FAILED_REPLY_MESSAGES;
+
+    public static final int NO_SUCH_FILE_ID = 1;
+    public static final int BAD_RANGE_ID = 2;
+    public static final int FILE_EMPTY_ID = 3;
+    public static final int UPDATE_ID = 4;
+
+    public static final List<Pair<String, Integer>> NO_SUCH_FILE_PARAMS =
+            List.of(new Pair<>("message", STRING_ID));
+    public static final List<Pair<String, Integer>> BAD_RANGE_PARAMS =
+            List.of(new Pair<>("message", STRING_ID));
+    public static final List<Pair<String, Integer>> FILE_EMPTY_PARAMS =
+            List.of(new Pair<>("message", STRING_ID));
+    public static final List<Pair<String, Integer>> UPDATE_PARAMS =
+            List.of(new Pair<>("pathname", STRING_ID), new Pair<>("content", STRING_ID));
+
+    public static final Map<Integer, List<Pair<String, Integer>>> ALERT_STATUS_PARAMS;
     static{
-        FAILED_REPLY_MESSAGES = Map.of(1, "file doesn't exit",
-                2, "bad range parameters",
-                3, "file already empty",
-                4, "file was changed");
+        ALERT_STATUS_PARAMS = Map.of(
+                NO_SUCH_FILE_ID, NO_SUCH_FILE_PARAMS,
+                BAD_RANGE_ID, BAD_RANGE_PARAMS,
+                FILE_EMPTY_ID, FILE_EMPTY_PARAMS,
+                UPDATE_ID, UPDATE_PARAMS
+        );
     }
+
+    public static final Map<Integer, String> ERROR_MESSAGES;
+    static{
+        ERROR_MESSAGES = Map.of(
+                NO_SUCH_FILE_ID, "file doesn't exit",
+                BAD_RANGE_ID, "bad range parameters",
+                FILE_EMPTY_ID, "file already empty");
+    }
+
 
     public static List<Pair<String, Integer>> get_request_params(int service_id) {
         return REQUEST_PARAMS.get(service_id);
     }
     public static List<Pair<String, Integer>> get_successful_reply_params(int service_id) {
-        return SUCCESSFUL_REPLY_PARAMS.get(service_id);
+        return SUCCESSFUL_STATUS_PARAMS.get(service_id);
     }
-    public static String get_failed_reply_params(int status_id) {
-        return FAILED_REPLY_MESSAGES.get(status_id);
+    public static List<Pair<String, Integer>> get_alert_reply_params(int alert_id) {
+        return ALERT_STATUS_PARAMS.get(alert_id);
     }
+
 }

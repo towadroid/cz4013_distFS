@@ -1,9 +1,6 @@
 import javafx.util.Pair;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
 import java.util.*;
 
 public class Util {
@@ -66,26 +63,41 @@ public class Util {
         Map<String, Object> message = new HashMap<>();
         int status_id = bytes_to_int(raw_content.subList(0, 4));
         message.put("status_id", status_id);
+        List<Pair<String, Integer>> params;
 
-        if (status_id == Constants.SUCCESSFUL_SERVICE_ID) {
-            List<Pair<String, Integer>> params = Constants.get_successful_reply_params(service_id);
-            int counter = 4;
-            for (Pair<String, Integer> param : params) {
-                int param_type = param.getValue();
-                int i = bytes_to_int(raw_content.subList(counter, counter + Constants.INT_SIZE));
-                counter += Constants.INT_SIZE;
-                message.put(param.getKey(), i);
-                if (param_type == Constants.STRING_ID) {
-                    String s = new String(to_primitive(raw_content.subList(counter, counter+i)));
-                    counter += i;
-                    message.put(param.getKey(), s);
-                }
+        // if the status is "successful", then the parameters of the message depend on the SERVICE ID given
+        // i.e. a successful read vs. successful write vs. successful monitor have different parameters
+        if (status_id == Constants.SUCCESSFUL_STATUS_ID) {
+            params = Constants.get_successful_reply_params(service_id);
+        }
+
+        // if the status is not "successful", then the parameters of the message depend on the STATUS ID given
+        // i.e. one of the error messages or an update notification
+        // a status that is not "successful" is called an "alert"
+        else {
+            // if its an error message, then get the correct error message from Constants
+            if (Constants.ERROR_MESSAGES.containsKey(status_id)) {
+                String fail_message = Constants.ERROR_MESSAGES.get(status_id);
+                message.put("message", fail_message);
+                return message;
+            }
+            params = Constants.get_alert_reply_params(status_id);
+        }
+
+        // match raw_content with params
+        int counter = 4;
+        for (Pair<String, Integer> param : params) {
+            int param_type = param.getValue();
+            int i = bytes_to_int(raw_content.subList(counter, counter + Constants.INT_SIZE));
+            counter += Constants.INT_SIZE;
+            message.put(param.getKey(), i);
+            if (param_type == Constants.STRING_ID) {
+                String s = new String(to_primitive(raw_content.subList(counter, counter + i)));
+                counter += i;
+                message.put(param.getKey(), s);
             }
         }
-        else {
-            String fail_message = Constants.get_failed_reply_params(status_id);
-            message.put("message", fail_message);
-        }
+
         return message;
     }
 

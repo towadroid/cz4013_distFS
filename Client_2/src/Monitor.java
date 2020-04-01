@@ -1,4 +1,6 @@
 import java.io.IOException;
+import java.net.SocketTimeoutException;
+import java.util.List;
 import java.util.Map;
 
 public class Monitor extends Service {
@@ -15,17 +17,35 @@ public class Monitor extends Service {
         String[] request_values = get_user_request_values();
         // in milliseconds
         int monitor_time = Integer.parseInt(request_values[1]);
+        int monitor_request_id = runner.get_request_id();
 
-        Map<String, Object> reply = send_and_receive(request_values);
+        Map<String, Object> monitor_reply = send_and_receive(request_values);
+        List<Byte> update_bytes;
 
-        if ((int) reply.get("status") == 0) {
+        if ((int) monitor_reply.get("status") == Constants.SUCCESSFUL_STATUS_ID) {
             System.out.println("request success");
-
-
+            runner.socket.setSoTimeout(monitor_time);
+            try {
+                while(true) {
+                    try {
+                        update_bytes = Util.receive_message(monitor_request_id, runner);
+                        // we know that service id is not needed here
+                        Map<String, Object> update = Util.un_marshall(-1, update_bytes);
+                        System.out.println("Update received: " + update.get("content"));
+                    }
+                    catch (CorruptMessageException c) {
+                        // may want to wait a bit here?
+                        System.out.println("Received corrupt message; Throwing away");
+                    }
+                }
+            }
+            catch (SocketTimeoutException t) {
+                System.out.println("Timed out; Done receiving updates");
+            }
 
         }
         else {
-            System.out.println("error: " + reply.get("message"));
+            System.out.println("error: " + monitor_reply.get("message"));
         }
     }
 
