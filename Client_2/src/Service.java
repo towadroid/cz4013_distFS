@@ -33,6 +33,15 @@ public abstract class Service {
         else if (service_id == Constants.WRITE_ID) {
             return new Write(r);
         }
+        else if (service_id == Constants.MONITOR_ID) {
+            return new Monitor(r);
+        }
+        else if (service_id == Constants.CLEAR_ID) {
+            return new Clear(r);
+        }
+        else if (service_id == Constants.TRIM_ID) {
+            return new Trim(r);
+        }
         else if (service_id == Constants.TEST_ID) {
             return new TestService(r);
         }
