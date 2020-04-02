@@ -6,7 +6,7 @@ import java.util.*;
 
 public class Util {
 
-    public static Map<String, Object> send_and_receive(int service_id, String[] input, Runner runner) throws IOException {
+    public static Map<String, Object> send_and_receive(int service_id, String[] input, Runner runner) throws IOException, ApplicationException {
         runner.socket.setSoTimeout(Constants.TIMEOUT);
         List<Byte> reply_content;
         List<List<Byte>> request = Util.marshall(runner.get_request_id(), service_id, input);
@@ -93,7 +93,7 @@ public class Util {
         return all_content;
     }
 
-    public static Map<String, Object> un_marshall(int service_id, List<Byte> raw_content) {
+    public static Map<String, Object> un_marshall(int service_id, List<Byte> raw_content) throws ApplicationException {
         Map<String, Object> message = new HashMap<>();
         int status_id = bytes_to_int(raw_content.subList(0, 4));
         message.put("status_id", status_id);
@@ -112,8 +112,7 @@ public class Util {
             // if its an error message, then get the correct error message from Constants
             if (Constants.ERROR_MESSAGES.containsKey(status_id)) {
                 String fail_message = Constants.ERROR_MESSAGES.get(status_id);
-                message.put("message", fail_message);
-                return message;
+                throw new ApplicationException(fail_message);
             }
             params = Constants.get_alert_reply_params(status_id);
         }

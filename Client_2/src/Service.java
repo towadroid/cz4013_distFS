@@ -17,12 +17,12 @@ public abstract class Service {
     public void act() throws IOException {
         //ask for user input
         String[] request_values = get_user_request_values();
-        Map<String, Object> reply = send_and_receive(request_values);
-        if ((int) reply.get("status") == 0) {
+        try{
+            Map<String, Object> reply = send_and_receive(request_values);
             System.out.println("request success");
         }
-        else {
-            System.out.println("error: " + reply.get("message"));
+        catch(ApplicationException ae) {
+            System.out.println("error: " + ae.getMessage());
         }
     }
 
@@ -50,7 +50,7 @@ public abstract class Service {
         }
     }
 
-    public Map<String, Object> send_and_receive(String[] input) throws IOException {
+    public Map<String, Object> send_and_receive(String[] input) throws IOException, ApplicationException {
         return Util.send_and_receive(service_id, input, runner);
     }
 

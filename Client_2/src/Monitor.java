@@ -20,10 +20,9 @@ public class Monitor extends Service {
         long monitor_start = System.currentTimeMillis();
         int monitor_request_id = runner.get_request_id();
 
-        Map<String, Object> monitor_reply = send_and_receive(request_values);
-        List<Byte> update_bytes;
-
-        if ((int) monitor_reply.get("status") == Constants.SUCCESSFUL_STATUS_ID) {
+        try {
+            send_and_receive(request_values);
+            List<Byte> update_bytes;
             System.out.println("request success");
             runner.socket.setSoTimeout(monitor_period);
             try {
@@ -49,9 +48,10 @@ public class Monitor extends Service {
                 System.out.println("Timed out; Done receiving updates");
             }
         }
-        else {
-            System.out.println("error: " + monitor_reply.get("message"));
+        catch (ApplicationException ae) {
+            System.out.println("error: " + ae.getMessage());
         }
+
     }
 
 }
