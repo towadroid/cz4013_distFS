@@ -1,9 +1,43 @@
 import javafx.util.Pair;
 
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.util.*;
 
 public class Util {
+
+    public static Map<String, Object> send_and_receive(int service_id, String[] input, Runner runner) throws IOException {
+        runner.socket.setSoTimeout(Constants.TIMEOUT);
+        List<Byte> reply_content;
+        List<List<Byte>> request = Util.marshall(runner.get_request_id(), service_id, input);
+        Util.send_message(request, runner);
+        System.out.println("Request sent");
+        while(true) {
+            try {
+                reply_content = Util.receive_message(runner.get_request_id(), runner);
+                System.out.println("Reply received");
+                break;
+            }
+            catch (SocketTimeoutException t) {
+                System.out.println("Timed out; Request re-sent");
+                Util.send_message(request, runner);
+            }
+            catch (CorruptMessageException c) {
+                // may want to wait a bit here?
+                System.out.println("Received corrupt message; Throwing away");
+            }
+        }
+        Map<String, Object> reply = Util.un_marshall(service_id, reply_content);
+
+        if (Constants.AT_MOST_ONCE) {
+            // upon receiving, send acknowledgment
+            List<List<Byte>> ack = Util.marshall(runner.get_request_id(), Constants.ACKNOWLEDGMENT_ID, new String[0]);
+            Util.send_message(ack, runner);
+        }
+
+        runner.increment_request_id();
+        return reply;
+    }
 
     /** For marshalling requests
      * @param request_id

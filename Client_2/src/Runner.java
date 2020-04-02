@@ -1,24 +1,25 @@
 import java.io.IOException;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Scanner;
 
 public class Runner {
 
-    Scanner scanner;
-    InetAddress host;
-    DatagramSocket socket;
+    public Scanner scanner;
+    public InetAddress host;
+    public DatagramSocket socket;
+    public HashMap<String, CacheObject> cache;
     private int request_id = 0;
-    private String server_name;
     private int server_port;
 
     public Runner(String s_name, int s_port) throws UnknownHostException, SocketException {
         socket = new DatagramSocket();
         scanner = new Scanner(System.in);
-        server_name = s_name;
         server_port = s_port;
-        host = InetAddress.getByName(server_name);
+        host = InetAddress.getByName(s_name);
+        cache = new HashMap<>();
     }
 
     /**Send one packet to the server
