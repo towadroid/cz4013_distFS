@@ -20,16 +20,9 @@ public class Read extends  Service {
         if (!runner.cache.containsKey(pathname)) {
             runner.cache.put(pathname, new CacheObject(pathname, runner));
         }
+
         CacheObject cache_object = runner.cache.get(pathname);
-
-        boolean cached = cache_object.has_range(offset, byte_count);
-        boolean local_fresh = cache_object.validate_local();
-        boolean server_fresh = true;
-        if (!local_fresh) {
-            server_fresh = cache_object.validate_server(runner);
-        }
-
-        if (!cached || cached && !local_fresh && !server_fresh) {
+        if (cache_object.must_read_server(offset, byte_count, runner)) {
             Map<String, Object> reply = send_and_receive(request_values);
             cache_object.set_cache(offset, byte_count, (String) reply.get("content"));
         }
