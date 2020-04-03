@@ -8,7 +8,6 @@ public class Read extends  Service {
         service_id = Constants.READ_ID;
     }
 
-    // TODO: deal with possible bad requests/errors
     @Override
     public void act() throws IOException {
 
