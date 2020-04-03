@@ -8,6 +8,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Scanner;
 
+/**
+ * Holds server connection info, as well as anything that remains across multiple calls to services
+ */
 public class Runner {
 
     public Scanner scanner;
@@ -18,8 +21,8 @@ public class Runner {
     private int server_port;
 
     /**
-     * @param s_name
-     * @param s_port
+     * @param s_name server name
+     * @param s_port server port
      * @throws UnknownHostException
      * @throws SocketException
      */

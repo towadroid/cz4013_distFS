@@ -10,6 +10,10 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Abstract class for services that this application can perform for the client
+ * Sub-classes: Read, Write, Monitor, Clear, Trim
+ */
 public abstract class Service {
 
     public Runner runner;
@@ -19,11 +23,15 @@ public abstract class Service {
         runner = r;
     }
 
+    /** Perform the service
+     * This basic method (shared by Write, Trim, and Clear) can be overridden for more involved services (Monitor, Write)
+     * @throws IOException send/receive message
+     */
     public void act() throws IOException {
         //ask for user input
         String[] request_values = get_user_request_values();
         try{
-            Map<String, Object> reply = send_and_receive(request_values);
+            send_and_receive(request_values);
             System.out.println("request success");
         }
         catch(ApplicationException ae) {
@@ -31,6 +39,11 @@ public abstract class Service {
         }
     }
 
+    /** Generating for services
+     * @param service_id the service requested
+     * @param r connection info
+     * @return the requested Service
+     */
     public static Service generate_service(int service_id, Runner r) {
         if (service_id == Constants.READ_ID) {
             return new Read(r);
@@ -52,10 +65,19 @@ public abstract class Service {
         }
     }
 
-    public Map<String, Object> send_and_receive(String[] input) throws IOException, ApplicationException {
-        return Util.send_and_receive(service_id, input, runner);
+    /** Wrapper for Util.send_and_receive
+     * @param values parameter values for the service
+     * @return the reply from the server, as a Map
+     * @throws IOException send/receive message
+     * @throws ApplicationException BadPathnameException, BadRangeException, FileEmptyException
+     */
+    public Map<String, Object> send_and_receive(String[] values) throws IOException, ApplicationException {
+        return Util.send_and_receive(service_id, values, runner);
     }
 
+    /** Gets values required to perform Service from user
+     * @return the values
+     */
     public String[] get_user_request_values() {
         List<Pair<String, Integer>> params = Constants.get_request_params(service_id);
         String[] ret = new String[params.size()];

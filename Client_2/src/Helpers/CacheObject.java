@@ -8,6 +8,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Holds information for storing read content in the cache
+ */
 public class CacheObject {
 
     private String pathname;

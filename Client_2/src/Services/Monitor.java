@@ -33,6 +33,7 @@ public class Monitor extends Service {
             List<Byte> update_bytes;
             System.out.println("request success");
             runner.socket.setSoTimeout(monitor_period);
+            // hacky way of waiting for a certain period for updates from server
             try {
                 while(true) {
                     long current_time = System.currentTimeMillis();

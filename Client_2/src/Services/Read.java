@@ -25,16 +25,19 @@ public class Read extends  Service {
         int byte_count = Integer.parseInt(request_values[2]);
 
         try {
+            // place a new CacheObject if it didn't exist before
             if (!runner.cache.containsKey(pathname)) {
                 runner.cache.put(pathname, new CacheObject(pathname, runner));
             }
 
             CacheObject cache_object = runner.cache.get(pathname);
+            // only read from the server if we must
             if (cache_object.must_read_server(offset, byte_count, runner)) {
                 Map<String, Object> reply = send_and_receive(request_values);
                 cache_object.set_cache(offset, byte_count, (String) reply.get("content"));
             }
 
+            // either way, get the content from the cache
             String content = cache_object.get_cache(offset, byte_count);
             System.out.println(content);
         }
