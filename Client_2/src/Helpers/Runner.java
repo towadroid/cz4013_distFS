@@ -1,6 +1,9 @@
+package Helpers;
+
+import Services.Service;
+
 import java.io.IOException;
 import java.net.*;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Scanner;
@@ -49,26 +52,6 @@ public class Runner {
     }
     public int get_request_id() {
         return request_id;
-    }
-
-    public static void main(String[] args) throws IOException {
-        // Server name: 10.27.135.232
-        // Server port: 2302
-        Runner runner = new Runner(args[0], Integer.parseInt(args[1]));
-        while (true) {
-            System.out.println(Constants.PROMPT);
-            int input = runner.scanner.nextInt();
-            runner.scanner.nextLine();
-            if (input == Constants.EXIT_ID) {
-                break;
-            }
-            Service requested_service = Service.generate_service(input, runner);
-            if (!(requested_service==null)) {
-                requested_service.act();
-            }
-            System.out.println("");
-        }
-        runner.socket.close();
     }
 
 }

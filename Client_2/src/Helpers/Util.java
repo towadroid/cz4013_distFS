@@ -1,3 +1,7 @@
+package Helpers;
+
+import Exceptions.ApplicationException;
+import Exceptions.CorruptMessageException;
 import javafx.util.Pair;
 
 import java.io.IOException;
@@ -23,8 +27,7 @@ public class Util {
                 Util.send_message(request, runner);
             }
             catch (CorruptMessageException c) {
-                // may want to wait a bit here?
-                System.out.println("Received corrupt message; Throwing away");
+                System.out.println("Throwing away corrupt message");
             }
         }
         Map<String, Object> reply = Util.un_marshall(service_id, reply_content);
@@ -69,7 +72,7 @@ public class Util {
      * @throws IOException from socket receive
      */
 
-    public static List<Byte> receive_message(int check_request_id, Runner runner) throws IOException {
+    public static List<Byte> receive_message(int check_request_id, Runner runner) throws IOException, CorruptMessageException {
         int total_packets = -1;
         List<Byte> all_content = new ArrayList<>();
         int current_packet = 0;
@@ -109,12 +112,9 @@ public class Util {
         // i.e. one of the error messages or an update notification
         // a status that is not "successful" is called an "alert"
         else {
-            // if its an error message, then get the correct error message from Constants
-            if (Constants.ERROR_MESSAGES.containsKey(status_id)) {
-                String fail_message = Constants.ERROR_MESSAGES.get(status_id);
-                throw new ApplicationException(fail_message);
-            }
-            params = Constants.get_alert_reply_params(status_id);
+            int alert_id = status_id;
+            ApplicationException.check_app_exception(alert_id);
+            params = Constants.get_alert_reply_params(alert_id);
         }
 
         // match raw_content with params

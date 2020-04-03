@@ -1,3 +1,9 @@
+package Helpers;
+
+import Exceptions.ApplicationException;
+import Exceptions.BadRangeException;
+import Exceptions.BadPathnameException;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,9 +23,9 @@ public class CacheObject {
      * @param pn pathname
      * @param runner
      * @throws IOException
-     * @throws ApplicationException bad pathname
+     * @throws BadPathnameException
      */
-    public CacheObject(String pn, Runner runner) throws IOException, ApplicationException {
+    public CacheObject(String pn, Runner runner) throws IOException, BadPathnameException {
         pathname = pn;
         // also sets server_checkin_time
         last_known_edit_time = get_server_edit_time(runner);
@@ -30,9 +36,9 @@ public class CacheObject {
      * @param offset file offset
      * @param byte_count number of bytes to read
      * @return requested string from cache
-     * @throws ApplicationException bad range
+     * @throws BadRangeException
      */
-    public String get_cache(int offset, int byte_count) throws ApplicationException {
+    public String get_cache(int offset, int byte_count) throws BadRangeException {
         check_range(offset, byte_count);
         int start_block = get_start_block(offset);
         int end_block = get_end_block(offset, byte_count);
@@ -55,9 +61,9 @@ public class CacheObject {
      * @param offset file offset
      * @param byte_count number of bytes read
      * @param new_content read content returned by the server (in blocks)
-     * @throws ApplicationException bad range
+     * @throws BadRangeException
      */
-    public void set_cache(int offset, int byte_count, String new_content) throws ApplicationException {
+    public void set_cache(int offset, int byte_count, String new_content) throws BadRangeException {
         check_range(offset, byte_count);
         int start_block = get_start_block(offset);
         int end_block = get_end_block(offset, byte_count);
@@ -80,13 +86,20 @@ public class CacheObject {
      * @param runner
      * @return whether or not one must read the server
      * @throws IOException
-     * @throws ApplicationException bad pathname, bad range
+     * @throws BadPathnameException
+     * @throws BadRangeException
      */
-    public boolean must_read_server(int offset, int byte_count, Runner runner) throws IOException, ApplicationException {
+    public boolean must_read_server(int offset, int byte_count, Runner runner) throws IOException, BadPathnameException, BadRangeException {
         return !cached(offset, byte_count) || (!local_fresh() && !server_fresh(runner));
     }
 
-    private boolean cached(int offset, int byte_count) throws ApplicationException {
+    /**
+     * @param offset
+     * @param byte_count
+     * @return
+     * @throws BadRangeException
+     */
+    private boolean cached(int offset, int byte_count) throws BadRangeException {
         check_range(offset, byte_count);
         int start_block = get_start_block(offset);
         int end_block = get_end_block(offset, byte_count);
@@ -98,11 +111,20 @@ public class CacheObject {
         return true;
     }
 
+    /**
+     * @return
+     */
     private boolean local_fresh() {
         return System.currentTimeMillis() - server_checkin_time < Constants.FRESHNESS_INTERVAL;
     }
 
-    private boolean server_fresh(Runner runner) throws IOException, ApplicationException {
+    /**
+     * @param runner
+     * @return
+     * @throws IOException
+     * @throws BadPathnameException
+     */
+    private boolean server_fresh(Runner runner) throws IOException, BadPathnameException {
         int last_edit_time = get_server_edit_time(runner);
         if (last_known_edit_time == last_edit_time) {
             return true;
@@ -115,26 +137,56 @@ public class CacheObject {
         }
     }
 
-    private int get_server_edit_time(Runner runner) throws IOException, ApplicationException {
+    /**
+     * @param runner
+     * @return
+     * @throws IOException
+     * @throws BadPathnameException
+     */
+    private int get_server_edit_time(Runner runner) throws IOException, BadPathnameException {
         server_checkin_time = System.currentTimeMillis();
 
         String[] request_values = {pathname};
-        Map<String, Object> reply = Util.send_and_receive(Constants.EDIT_TIME_ID, request_values, runner);
-        return Integer.parseInt((String)reply.get("time"));
+        try {
+            Map<String, Object> reply = Util.send_and_receive(Constants.EDIT_TIME_ID, request_values, runner);
+            return Integer.parseInt((String)reply.get("time"));
+        }
+        catch (BadPathnameException nsfe) {
+            throw new BadPathnameException();
+        }
+        // this should never happen
+        catch (ApplicationException ae) {
+            System.out.println("unexpected error: " + ae.getMessage());
+            return -1;
+        }
     }
 
+    /**
+     * @param offset
+     * @return
+     */
     private int get_start_block(int offset) {
         return (int) Math.floor(offset * 1.0 / Constants.FILE_BLOCK_SIZE);
     }
 
+    /**
+     * @param offset
+     * @param byte_count
+     * @return
+     */
     private int get_end_block(int offset, int byte_count) {
         return (int) Math.floor(offset+byte_count * 1.0 / Constants.FILE_BLOCK_SIZE);
     }
 
-    private void check_range(int offset, int byte_count) throws ApplicationException {
+    /**
+     * @param offset
+     * @param byte_count
+     * @throws BadRangeException
+     */
+    private void check_range(int offset, int byte_count) throws BadRangeException {
         int end_block = get_end_block(offset, byte_count);
         if (offset < 0 || byte_count < 0 || end_block > final_block) {
-            throw new ApplicationException(Constants.ERROR_MESSAGES.get(Constants.BAD_RANGE_ID));
+            throw new BadRangeException();
         }
     }
 }

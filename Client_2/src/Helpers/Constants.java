@@ -1,3 +1,5 @@
+package Helpers;
+
 import javafx.util.Pair;
 
 import java.util.List;
@@ -109,15 +111,6 @@ public class Constants {
                 UPDATE_ID, UPDATE_PARAMS
         );
     }
-
-    public static final Map<Integer, String> ERROR_MESSAGES;
-    static{
-        ERROR_MESSAGES = Map.of(
-                NO_SUCH_FILE_ID, "file doesn't exit",
-                BAD_RANGE_ID, "bad range parameters",
-                FILE_EMPTY_ID, "file already empty");
-    }
-
 
     public static List<Pair<String, Integer>> get_request_params(int service_id) {
         return REQUEST_PARAMS.get(service_id);
