@@ -25,6 +25,7 @@ public class Constants {
 
     // Basic settings
     public static final boolean AT_MOST_ONCE = false;
+    public static final boolean DEBUG = true;
 
     // Services
     public static final String SERVICE_PROMPT =

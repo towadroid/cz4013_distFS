@@ -95,7 +95,16 @@ public class CacheObject {
      * @throws BadRangeException if the given offset/byte_count combo is certain to be out of range
      */
     public boolean must_read_server(int offset, int byte_count, Runner runner) throws IOException, BadPathnameException, BadRangeException {
-        return !cached(offset, byte_count) || (!local_fresh() && !server_fresh(runner));
+        boolean must = !cached(offset, byte_count) || (!local_fresh() && !server_fresh(runner));
+        if (Constants.DEBUG) {
+            if (must) {
+                System.out.println("Must read from server");
+            }
+            else {
+                System.out.println("No need to read from server");
+            }
+        }
+        return must;
     }
 
     /** Whether the requested offset/byte_count combo already exist in the cache
@@ -110,9 +119,11 @@ public class CacheObject {
         int end_block = get_end_block(offset, byte_count);
         for (int i = start_block; i <= end_block; i++) {
             if (!content.containsKey(i)) {
+                if (Constants.DEBUG) System.out.println("Checking cache: NOT cached");
                 return false;
             }
         }
+        if (Constants.DEBUG) System.out.println("Checking cache: cached");
         return true;
     }
 
@@ -120,7 +131,16 @@ public class CacheObject {
      * @return expired?
      */
     private boolean local_fresh() {
-        return System.currentTimeMillis() - server_checkin_time < Constants.FRESHNESS_INTERVAL;
+        boolean fresh = System.currentTimeMillis() - server_checkin_time < Constants.FRESHNESS_INTERVAL;
+        if (Constants.DEBUG) {
+            if (fresh) {
+                System.out.println("Checking freshness interval: fresh");
+            }
+            else {
+                System.out.println("Checking freshness interval: NOT fresh");
+            }
+        }
+        return fresh;
     }
 
     /** Whether the last update time at the server matches our last known edit time
@@ -133,9 +153,11 @@ public class CacheObject {
     private boolean server_fresh(Runner runner) throws IOException, BadPathnameException {
         int last_edit_time = get_server_edit_time(runner);
         if (last_known_edit_time == last_edit_time) {
+            if (Constants.DEBUG) System.out.println("Checking server: NO new updates");
             return true;
         }
         else{
+            if (Constants.DEBUG) System.out.println("Checking server: new updates. Clearing cache");
             last_known_edit_time = last_edit_time;
             content = new HashMap<>();
             final_block = -1;

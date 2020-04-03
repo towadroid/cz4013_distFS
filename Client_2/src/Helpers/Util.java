@@ -22,23 +22,22 @@ public class Util {
      * @throws ApplicationException BadPathnameException, BadRangeException, FilEmptyException
      */
     public static Map<String, Object> send_and_receive(int service_id, String[] values, Runner runner) throws IOException, ApplicationException {
+        if (Constants.DEBUG) System.out.println("Begin send/receive for service id " + service_id);
         runner.socket.setSoTimeout(Constants.TIMEOUT);
         List<Byte> reply_content;
         List<List<Byte>> request = Util.marshall(runner.get_request_id(), service_id, values);
         Util.send_message(request, runner);
-        System.out.println("Request sent");
         while(true) {
             try {
                 reply_content = Util.receive_message(runner.get_request_id(), runner);
-                System.out.println("Reply received");
                 break;
             }
             catch (SocketTimeoutException t) {
-                System.out.println("Timed out; Request re-sent");
+                if (Constants.DEBUG) System.out.println("Socket timeout; Resending message ");
                 Util.send_message(request, runner);
             }
             catch (CorruptMessageException c) {
-                System.out.println("Throwing away corrupt message");
+                if (Constants.DEBUG) System.out.println("Throwing away corrupt message");
             }
         }
         Map<String, Object> reply = Util.un_marshall(service_id, reply_content);
@@ -74,6 +73,7 @@ public class Util {
         for (List<Byte> packet : message) {
             runner.send_packet(packet);
         }
+        if (Constants.DEBUG) System.out.println("Message sent");
     }
 
     /**Receive an entire message (which could contain many packets)
@@ -104,6 +104,7 @@ public class Util {
             current_packet++;
         }
         all_content = all_content.subList(0, overall_content_size);
+        if (Constants.DEBUG) System.out.println("Message received");
         return all_content;
     }
 

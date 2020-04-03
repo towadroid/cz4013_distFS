@@ -31,9 +31,9 @@ public class Monitor extends Service {
         try {
             send_and_receive(request_values);
             List<Byte> update_bytes;
-            System.out.println("request success");
             runner.socket.setSoTimeout(monitor_period);
             // hacky way of waiting for a certain period for updates from server
+            System.out.println("Start receiving updates: ");
             try {
                 while(true) {
                     long current_time = System.currentTimeMillis();
@@ -46,19 +46,19 @@ public class Monitor extends Service {
                         update_bytes = Util.receive_message(monitor_request_id, runner);
                         // we know that service id is not needed here
                         Map<String, Object> update = Util.un_marshall(-1, update_bytes);
-                        System.out.println("Update received: " + update.get("content"));
+                        System.out.println("Update: " + update.get("content"));
                     }
                     catch (CorruptMessageException c) {
-                        System.out.println("Received corrupt message; Throwing away");
+                        if (Constants.DEBUG) System.out.println("Received corrupt message; Throwing away");
                     }
                 }
             }
             catch (SocketTimeoutException t) {
-                System.out.println("Timed out; Done receiving updates");
+                System.out.println("Done receiving updates.");
             }
         }
         catch (ApplicationException ae) {
-            System.out.println("error: " + ae.getMessage());
+            System.out.println("Error: " + ae.getMessage() + ".");
         }
 
     }

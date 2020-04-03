@@ -32,10 +32,10 @@ public abstract class Service {
         String[] request_values = get_user_request_values();
         try{
             send_and_receive(request_values);
-            System.out.println("request success");
+            System.out.println("Done.");
         }
         catch(ApplicationException ae) {
-            System.out.println("error: " + ae.getMessage());
+            System.out.println("Error: " + ae.getMessage() + ".");
         }
     }
 
