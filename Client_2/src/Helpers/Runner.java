@@ -17,6 +17,12 @@ public class Runner {
     private int request_id = 0;
     private int server_port;
 
+    /**
+     * @param s_name
+     * @param s_port
+     * @throws UnknownHostException
+     * @throws SocketException
+     */
     public Runner(String s_name, int s_port) throws UnknownHostException, SocketException {
         socket = new DatagramSocket();
         scanner = new Scanner(System.in);

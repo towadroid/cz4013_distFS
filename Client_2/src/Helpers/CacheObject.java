@@ -17,26 +17,27 @@ public class CacheObject {
     private int last_known_edit_time;
 
     private HashMap<Integer, String> content;
-    private int final_block = Integer.MAX_VALUE;
+    private int final_block;
 
     /** Set the pathname, server_checkin_time, and last_known_edit time
      * @param pn pathname
-     * @param runner
-     * @throws IOException
-     * @throws BadPathnameException
+     * @param runner connection info
+     * @throws IOException sending/receiving message
+     * @throws BadPathnameException if requesting the edit time at the server yields bad pathname
      */
     public CacheObject(String pn, Runner runner) throws IOException, BadPathnameException {
         pathname = pn;
         // also sets server_checkin_time
         last_known_edit_time = get_server_edit_time(runner);
         content = new HashMap<>();
+        final_block = -1;
     }
 
     /** Grab the requested string from the cache, assuming the necessary blocks exist
      * @param offset file offset
      * @param byte_count number of bytes to read
      * @return requested string from cache
-     * @throws BadRangeException
+     * @throws BadRangeException see check_range method (bottom)
      */
     public String get_cache(int offset, int byte_count) throws BadRangeException {
         check_range(offset, byte_count);
@@ -61,7 +62,7 @@ public class CacheObject {
      * @param offset file offset
      * @param byte_count number of bytes read
      * @param new_content read content returned by the server (in blocks)
-     * @throws BadRangeException
+     * @throws BadRangeException see check_range method (bottom)
      */
     public void set_cache(int offset, int byte_count, String new_content) throws BadRangeException {
         check_range(offset, byte_count);
@@ -78,26 +79,27 @@ public class CacheObject {
         content.put(end_block, last_piece);
     }
 
-    /** There are two cases where we need to read from the server:
+    /** Whether we must read the content from the server
+     * There are two cases where we need to read from the server:
      * 1. if it is not cached locally
      * 2. if it is cached locally, expired the freshness interval, and has been edited at the server
      * @param offset file offset
      * @param byte_count number of bytes to read
-     * @param runner
+     * @param runner connection info
      * @return whether or not one must read the server
-     * @throws IOException
-     * @throws BadPathnameException
-     * @throws BadRangeException
+     * @throws IOException send/receive message
+     * @throws BadPathnameException if requesting edit time at server yields bad pathname
+     * @throws BadRangeException if the given offset/byte_count combo is certain to be out of range
      */
     public boolean must_read_server(int offset, int byte_count, Runner runner) throws IOException, BadPathnameException, BadRangeException {
         return !cached(offset, byte_count) || (!local_fresh() && !server_fresh(runner));
     }
 
-    /**
-     * @param offset
-     * @param byte_count
-     * @return
-     * @throws BadRangeException
+    /** Whether the requested offset/byte_count combo already exist in the cache
+     * @param offset file offset
+     * @param byte_count number of bytes to read
+     * @return whether it exists in the cache
+     * @throws BadRangeException if the given offset/byte_count combo is certain to be out of range
      */
     private boolean cached(int offset, int byte_count) throws BadRangeException {
         check_range(offset, byte_count);
@@ -111,18 +113,19 @@ public class CacheObject {
         return true;
     }
 
-    /**
-     * @return
+    /** Whether the freshness interval has expired or not
+     * @return expired?
      */
     private boolean local_fresh() {
         return System.currentTimeMillis() - server_checkin_time < Constants.FRESHNESS_INTERVAL;
     }
 
-    /**
-     * @param runner
-     * @return
-     * @throws IOException
-     * @throws BadPathnameException
+    /** Whether the last update time at the server matches our last known edit time
+     * If it doesn't match, then we must clear the cache (as it is now out of date)
+     * @param runner connection info
+     * @return match?
+     * @throws IOException send/receive messages
+     * @throws BadPathnameException if requesting the edit time at the server yields bad pathname
      */
     private boolean server_fresh(Runner runner) throws IOException, BadPathnameException {
         int last_edit_time = get_server_edit_time(runner);
@@ -132,16 +135,17 @@ public class CacheObject {
         else{
             last_known_edit_time = last_edit_time;
             content = new HashMap<>();
-            final_block = Integer.MAX_VALUE;
+            final_block = -1;
             return false;
         }
     }
 
-    /**
-     * @param runner
-     * @return
-     * @throws IOException
-     * @throws BadPathnameException
+    /** Get the time of the server's last update
+     * automatically update server_checkin_time
+     * @param runner connection info
+     * @return the time
+     * @throws IOException send/receive messages
+     * @throws BadPathnameException if requesting the edit time at the server yields bad pathname
      */
     private int get_server_edit_time(Runner runner) throws IOException, BadPathnameException {
         server_checkin_time = System.currentTimeMillis();
@@ -161,32 +165,28 @@ public class CacheObject {
         }
     }
 
-    /**
-     * @param offset
-     * @return
-     */
     private int get_start_block(int offset) {
         return (int) Math.floor(offset * 1.0 / Constants.FILE_BLOCK_SIZE);
     }
 
-    /**
-     * @param offset
-     * @param byte_count
-     * @return
-     */
     private int get_end_block(int offset, int byte_count) {
         return (int) Math.floor(offset+byte_count * 1.0 / Constants.FILE_BLOCK_SIZE);
     }
 
-    /**
-     * @param offset
-     * @param byte_count
-     * @throws BadRangeException
+    /** Check if the given offset/byte_count combo is certain to be out of range
+     * @param offset file offset
+     * @param byte_count number of bytes to read
+     * @throws BadRangeException if the combo is indeed out of range
      */
     private void check_range(int offset, int byte_count) throws BadRangeException {
         int end_block = get_end_block(offset, byte_count);
-        if (offset < 0 || byte_count < 0 || end_block > final_block) {
+        if (offset < 0 ||
+            byte_count < 0 ||
+            final_block != -1 && final_block == end_block &&
+                    (offset+byte_count) % Constants.FILE_BLOCK_SIZE > content.get(end_block).length())
+        {
             throw new BadRangeException();
         }
     }
 }
+

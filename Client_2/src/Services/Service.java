@@ -47,9 +47,6 @@ public abstract class Service {
         else if (service_id == Constants.TRIM_ID) {
             return new Trim(r);
         }
-        else if (service_id == Constants.TEST_ID) {
-            return new TestService(r);
-        }
         else {
             return null;
         }

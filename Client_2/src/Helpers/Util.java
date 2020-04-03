@@ -10,10 +10,18 @@ import java.util.*;
 
 public class Util {
 
-    public static Map<String, Object> send_and_receive(int service_id, String[] input, Runner runner) throws IOException, ApplicationException {
+    /**
+     * @param service_id the service to be performed
+     * @param values parameter values
+     * @param runner server connection info
+     * @return the reply from the server, in a Map
+     * @throws IOException from sending/receiving packet
+     * @throws ApplicationException BadPathnameException, BadRangeException, FilEmptyException
+     */
+    public static Map<String, Object> send_and_receive(int service_id, String[] values, Runner runner) throws IOException, ApplicationException {
         runner.socket.setSoTimeout(Constants.TIMEOUT);
         List<Byte> reply_content;
-        List<List<Byte>> request = Util.marshall(runner.get_request_id(), service_id, input);
+        List<List<Byte>> request = Util.marshall(runner.get_request_id(), service_id, values);
         Util.send_message(request, runner);
         System.out.println("Request sent");
         while(true) {
@@ -43,10 +51,10 @@ public class Util {
     }
 
     /** For marshalling requests
-     * @param request_id
-     * @param service_id
-     * @param values
-     * @return
+     * @param request_id unique per request sent
+     * @param service_id service to be performed
+     * @param values parameter values
+     * @return packets to be sent, as a List of Lists of Bytes
      */
     public static List<List<Byte>> marshall(int request_id, int service_id, String[] values) {
         List<Pair<String, Integer>> params = Constants.get_request_params(service_id);
@@ -67,7 +75,7 @@ public class Util {
 
     /**Receive an entire message (which could contain many packets)
      * @param check_request_id check received request ids against this one
-     * @param runner
+     * @param runner server connection info
      * @return the content portion of the message
      * @throws IOException from socket receive
      */
@@ -96,6 +104,16 @@ public class Util {
         return all_content;
     }
 
+    /** Unmarshall the message received from server
+     * The message may indicate:
+     *    1. successful service performed
+     *    2. an error (ex. file doesn't exit)
+     *    3. a notification (ex. file updated)
+     * @param service_id the service we expected to be performed
+     * @param raw_content message from server
+     * @return the message, as a map
+     * @throws ApplicationException BadPathnameException, BadRangeException, FilEmptyException
+     */
     public static Map<String, Object> un_marshall(int service_id, List<Byte> raw_content) throws ApplicationException {
         Map<String, Object> message = new HashMap<>();
         int status_id = bytes_to_int(raw_content.subList(0, 4));
@@ -134,6 +152,10 @@ public class Util {
         return message;
     }
 
+    /** Convert List of Bytes to Array of Bytes
+     * @param in List of Bytes
+     * @return Array of Bytes
+     */
     public static byte[] to_primitive(List<Byte> in) {
         byte[] ret = new byte[in.size()];
         for (int i = 0; i < ret.length; i++) {
@@ -141,6 +163,7 @@ public class Util {
         }
         return ret;
     }
+
 
     private static int[] get_header(byte[] packet) {
         int[] header = new int[3];
@@ -150,7 +173,6 @@ public class Util {
         return header;
     }
 
-    // little-endian??
     private static int bytes_to_int(byte[] bytes) {
         return ((bytes[3] & 0xFF) << 0) |
                 ((bytes[2] & 0xFF) << 8) |
@@ -158,7 +180,6 @@ public class Util {
                 ((bytes[0] & 0xFF) << 24 );
     }
 
-    // little-endian??
     private static int bytes_to_int(List<Byte> bytes) {
         return ((bytes.get(3) & 0xFF) << 0) |
                 ((bytes.get(2) & 0xFF) << 8) |
@@ -229,12 +250,7 @@ public class Util {
         return in;
     }
 
-    /** FOR DEBUGGING ONLY
-     * @param request_id
-     * @param service_id
-     * @param values
-     * @return
-     */
+    // FOR DEBUGGING PURPOSES ONLY
     private static List<List<Byte>> marshall_reply(int request_id, int service_id, String[] values) {
         List<Pair<String, Integer>> params = Constants.get_successful_reply_params(service_id);
         List<Byte> raw_content = marshall_to_content(service_id, params, values);

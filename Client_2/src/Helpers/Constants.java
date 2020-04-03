@@ -7,23 +7,28 @@ import java.util.Map;
 
 public class Constants {
 
-    public static final int INT_ID = 0;
+    // Basic sizes
     public static final int INT_SIZE = 4;
-    public static final int STRING_ID = 1;
     public static final int MAX_PACKET_SIZE = 256;
     public static final int PACKET_HEADER_SIZE = 12;
     public static final int MAX_PACKET_CONTENT_SIZE = MAX_PACKET_SIZE - PACKET_HEADER_SIZE;
+    public static final int FILE_BLOCK_SIZE = 100;
+
+    // Basic ID's
+    public static final int INT_ID = 0;
+    public static final int STRING_ID = 1;
+    public static final int EXIT_ID = 0;
+
+    // Basic time settings
     public static final int TIMEOUT = 1000000;
     public static final int FRESHNESS_INTERVAL = 60000;
-    public static final int FILE_BLOCK_SIZE = 100;
+
+    // Basic settings
     public static final boolean AT_MOST_ONCE = false;
 
-    public static final int EXIT_ID = 0;
-    public static final int TEST_ID = 99;
-
-    public static final String PROMPT = "Please enter: 0 for exit, 1 for read, 2 for write, 3 for monitor, " +
-            "4 for clear, 5 for trim, 99 for debug";
-
+    // Services
+    public static final String SERVICE_PROMPT =
+            "Please enter: 0 for exit, 1 for read, 2 for write, 3 for monitor, 4 for clear, 5 for trim";
     public static final int READ_ID = 1;
     public static final int WRITE_ID = 2;
     public static final int MONITOR_ID = 3;
@@ -32,6 +37,7 @@ public class Constants {
     public static final int EDIT_TIME_ID = 6;
     public static final int ACKNOWLEDGMENT_ID = 7;
 
+    // Parameters for requests
     public static final List<Pair<String, Integer>> READ_REQUEST_PARAMS =
             List.of(new Pair<>("pathname", STRING_ID), new Pair<>("offset", INT_ID), new Pair<>("byte_count", INT_ID));
     public static final List<Pair<String, Integer>> WRITE_REQUEST_PARAMS =
@@ -60,7 +66,7 @@ public class Constants {
         );
     }
 
-
+    // Parameters for successful services
     public static final int SUCCESSFUL_STATUS_ID = 0;
     public static final List<Pair<String, Integer>> READ_REPLY_PARAMS =
             List.of(new Pair<>("content", STRING_ID));
@@ -87,7 +93,7 @@ public class Constants {
         );
     }
 
-
+    // Parameters for alerts (i.e. messages that are not "successful")
     public static final int NO_SUCH_FILE_ID = 1;
     public static final int BAD_RANGE_ID = 2;
     public static final int FILE_EMPTY_ID = 3;

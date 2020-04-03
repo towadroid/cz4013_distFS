@@ -12,7 +12,7 @@ public class Main {
         // Server port: 2302
         Runner runner = new Runner(args[0], Integer.parseInt(args[1]));
         while (true) {
-            System.out.println(Constants.PROMPT);
+            System.out.println(Constants.SERVICE_PROMPT);
             int input = runner.scanner.nextInt();
             runner.scanner.nextLine();
             if (input == Constants.EXIT_ID) {
