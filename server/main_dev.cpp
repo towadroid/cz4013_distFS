@@ -23,8 +23,7 @@ using std::cout;
 using std::endl;
 
 void readfile() {
-    std::string tfile;
-    utils::read_file_to_string(constants::FILE_DIR_PATH + "file1", &tfile);
+    std::string tfile = utils::read_file_to_string(constants::FILE_DIR_PATH + "file1");
     cout << tfile;
 }
 

@@ -91,20 +91,41 @@ TEST(Handler, read) {
     h.receive_handle_message(mock_server, constants::ATLEAST);
 }
 
-// not working yet
+// need to make it multiple packets
 TEST(Handler, multiple_packets) {
     Handler h{};
     MockUdpServer_linux mock_server;
 
     sockaddr_storage client1 = get_client1();
 
-    BytePtr incoming_mgs1;
-    unsigned int inc1_len = utils::pack(incoming_mgs1, 0, 1, 2);
+    /* assume
+     * constexpr int HEADER_SIZE = 12;
+     * // this is the overall max packet size, including header
+     * constexpr int MAX_PACKET_SIZE = 256;*/
+    std::string long_path{};
+    for (int i = 5; i <= 244; ++i)
+        long_path.append("o");
+
+    std::string long_path2{};
+    for (int i = 249; i <= 300; ++i)
+        long_path2.append("o");
+    //4 more byte added per string when packed
+
+    BytePtr inc_msg1;
+    unsigned int inc1_len1 = utils::pack(inc_msg1, 0, 300, 0, long_path);
+
+    BytePtr inc_msg2;
+    unsigned int inc1_len2 = utils::pack(inc_msg2, 0, 300, 1, long_path2);
 
     EXPECT_CALL(mock_server, receive_msg_impl)
-            .WillOnce(SetArrayArgument<0>(incoming_mgs1.get(), incoming_mgs1.get() + inc1_len)
-            );
-    EXPECT_CALL(mock_server, get_client_address).WillOnce(ReturnRef(client1));
+            .Times(2)
+            .WillOnce(DoAll(
+                    SetArrayArgument<0>(inc_msg1.get(), inc_msg1.get() + inc1_len1),
+                    Return(inc1_len1)))
+            .WillOnce(DoAll(
+                    SetArrayArgument<0>(inc_msg2.get(), inc_msg2.get() + inc1_len2),
+                    Return(inc1_len2)));
+    EXPECT_CALL(mock_server, get_client_address).WillRepeatedly(ReturnRef(client1));
     h.receive_handle_message(mock_server, constants::ATLEAST);
 }
 

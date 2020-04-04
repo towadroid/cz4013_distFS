@@ -49,7 +49,7 @@ void Handler::service(Service_type service_type, const UdpServer_linux &server, 
             break;
         }
         case Service_type::file_mod_time: {
-            service_last_mod_time()
+            service_last_mod_time(raw_content_wo_servno, raw_reply, raw_reply_length);
             break;
         }
         case Service_type::ack_recvd_reply: {
@@ -167,7 +167,7 @@ Handler::service_remove_last_char(unsigned char *message, BytePtr &raw_result, u
 void Handler::service_last_mod_time(unsigned char *message, BytePtr &raw_result, unsigned int &result_length) {
     std::string path;
     utils::unpack(message, path);
-    int last_m_time = utils::get_last_mod_time(path{path});
+    int last_m_time = utils::get_last_mod_time(path);
     result_length = utils::pack(raw_result, last_m_time);
 }
 
@@ -260,7 +260,7 @@ void Handler::receive_handle_message(UdpServer_linux &server, const int semantic
         store_message(client_address, requestID, raw_content, (unsigned int) overall_size);
 }
 
-/** Given a buffer for raw content to send and its length, send the eventuallz fragmented message
+/** Given a buffer for raw content to send and its length, send the eventually fragmented message
  *
  * @param server
  * @param raw_content_buf
@@ -308,7 +308,7 @@ int Handler::receive_specific_packet(UdpServer_linux &server, int semantic, cons
                                      unsigned int exp_requestID, unsigned int exp_fragment_no, unsigned char *dest_buf,
                                      TimeStamp *const timeout_time) {
     bool no_timeout = nullptr == timeout_time;
-    while (no_timeout || std::chrono::steady_clock::now() > *timeout_time) {
+    while (no_timeout || std::chrono::steady_clock::now() < *timeout_time) {
         int s, usec;
         if (no_timeout) s = usec = -1;
         else utils::future_duration_to_s_usec(*timeout_time, s, usec);

@@ -9,6 +9,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <filesystem>
+#include <sys/stat.h>
 #include "spdlog/spdlog.h"
 #include "utils.hpp"
 #include "../HelperClasses.hpp"
@@ -38,6 +39,7 @@ std::string utils::read_file_to_string(const path &path) {
         // A bad_alloc exception is thrown if the function needs to allocate storage and fails.
         spdlog::error("{}; could not allocate storage for the string!", e.what());
     }
+    return std::string{};
 }
 
 /**
@@ -185,14 +187,17 @@ bool utils::is_expected_size_and_format() {
     return result;
 }
 
+/**Returns last modification time stamp of a file as Unix epoch time (seconds since 01.01.1970 GMT)
+ *
+ * Might later consider to use C++ filesystem to make it portable
+ * @param path
+ * @return
+ */
 int utils::get_last_mod_time(const path &path) {
-    auto ftime = fs::last_write_time(path);
-    //https://stackoverflow.com/a/31258680
-    auto ftime_s = std::chrono::time_point_cast<std::chrono::seconds>(ftime);
-    auto epoch = ftime_s.time_since_epoch();
-    auto value = std::chrono::duration_cast<std::chrono::milliseconds>(epoch);
-    long duration = value.count();
-    return (int) duration;
+    struct stat attrib;
+    int err = stat(path.string().c_str(), &attrib);
+    if (err != 0) perror("Could not read last modification time");
+    return (int) attrib.st_ctime;
 }
 
 /*
