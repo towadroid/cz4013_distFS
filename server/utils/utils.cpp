@@ -13,6 +13,8 @@
 #include "utils.hpp"
 #include "../HelperClasses.hpp"
 
+namespace fs = std::filesystem;
+
 /**Reads a whole ASCII file into a string.
  *
  * See https://stackoverflow.com/a/2602258
@@ -181,6 +183,16 @@ bool utils::is_expected_size_and_format() {
     result &= (4 == sizeof(int));
     result &= (8 == sizeof(long long int));
     return result;
+}
+
+int utils::get_last_mod_time(const path &path) {
+    auto ftime = fs::last_write_time(path);
+    //https://stackoverflow.com/a/31258680
+    auto ftime_s = std::chrono::time_point_cast<std::chrono::seconds>(ftime);
+    auto epoch = ftime_s.time_since_epoch();
+    auto value = std::chrono::duration_cast<std::chrono::milliseconds>(epoch);
+    long duration = value.count();
+    return (int) duration;
 }
 
 /*

@@ -19,7 +19,7 @@ using constants::Service_type;
  */
 void Handler::service(Service_type service_type, const UdpServer_linux &server, unsigned char *complete_raw_content,
                       BytePtr &raw_reply, unsigned int &raw_reply_length) {
-    unsigned char *raw_content_wo_servno = complete_raw_content + 4; //TODO use this later
+    unsigned char *raw_content_wo_servno = complete_raw_content + 4;
     switch (service_type) {
         case Service_type::read: {
             service_read(raw_content_wo_servno, raw_reply, raw_reply_length);
@@ -49,11 +49,12 @@ void Handler::service(Service_type service_type, const UdpServer_linux &server, 
             break;
         }
         case Service_type::file_mod_time: {
-            //TODO implement
+            service_last_mod_time()
             break;
         }
         case Service_type::ack_recvd_reply: {
-            //TODO what??
+            spdlog::warn(
+                    "Tried to invoke ack_recvd_reply service, this should not happen because acks are processed earlier!");
             break;
         }
 
@@ -163,6 +164,13 @@ Handler::service_remove_last_char(unsigned char *message, BytePtr &raw_result, u
     result_length = utils::pack(raw_result, constants::SUCCESS);
 }
 
+void Handler::service_last_mod_time(unsigned char *message, BytePtr &raw_result, unsigned int &result_length) {
+    std::string path;
+    utils::unpack(message, path);
+    int last_m_time = utils::get_last_mod_time(path{path});
+    result_length = utils::pack(raw_result, last_m_time);
+}
+
 void Handler::notify_registered_clients(const std::string &filename, const UdpServer_linux &server) {
     std::vector<MonitoringClient> file_reg_clients;
     try { file_reg_clients = registered_clients.at(filename); }
@@ -171,7 +179,6 @@ void Handler::notify_registered_clients(const std::string &filename, const UdpSe
     for (auto it = file_reg_clients.begin(); it != file_reg_clients.end(); ++it) {
         if (it->expired()) file_reg_clients.erase(it);
         else {
-            //TODO send notification message to client
             std::string file_content = utils::read_file_to_string(path{filename});
             BytePtr raw_content;
             unsigned int raw_length = utils::pack(raw_content, filename, file_content);
@@ -313,7 +320,9 @@ int Handler::receive_specific_packet(UdpServer_linux &server, int semantic, cons
 
             if (semantic == constants::ATMOST) {
                 if (is_ACK(buffer_mem + HEADER_SIZE)) {
-                    handle_ACK();
+                    spdlog::debug("Received ack from {} for requestID {}", utils::get_in_addr_port_str(client_address),
+                                  requestID);
+                    handle_ACK(requestID, client_address);
                     continue;
                 }
                 if (is_duplicate_request(&client_address, requestID) && 0 == fragment_no) {
@@ -359,11 +368,21 @@ int Handler::receive_specific_packet(UdpServer_linux &server, int semantic, cons
 bool Handler::is_ACK(unsigned char *raw_content) {
     int serv_no;
     utils::unpack(raw_content, serv_no);
-    return 7 == serv_no;
+    constants::Service_type s_type = constants::service_codes.at(serv_no);
+    return constants::Service_type::ack_recvd_reply == s_type;
 }
 
-void Handler::handle_ACK() {
-
+void Handler::handle_ACK(unsigned int requestID, const sockaddr_storage &client) {
+    auto client_map_it = stored_messages.find(client);
+    if (client_map_it != stored_messages.end()) {
+        auto client_map = client_map_it->second;
+        auto stored_entry = client_map.find(requestID);
+        if (stored_entry != client_map.end()) {
+            client_map.erase(requestID);
+            spdlog::info("Stored message {} for client was removed from stored list.", requestID,
+                         utils::get_in_addr_port_str(client));
+        }
+    }
 }
 
 void Handler::unpack_header(unsigned char *buf, unsigned int &requestID, unsigned int &overall_size,

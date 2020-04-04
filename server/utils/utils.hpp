@@ -37,6 +37,8 @@ namespace utils {
 
     void remove_last_char(const path &path);
 
+    int get_last_mod_time(const path &path);
+
     //-------------- internet address -------------------
     int get_in_port(sockaddr_storage const *sock_storage);
 

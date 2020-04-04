@@ -68,6 +68,8 @@ private:
     void service_remove_last_char(unsigned char *message, BytePtr &raw_result, unsigned int &result_length,
                                   string &path_string);
 
+    void service_last_mod_time(unsigned char *message, BytePtr &raw_result, unsigned int &result_length);
+
     //------------------------ stored_messages interaction ------------
     void store_message(const sockaddr_storage &client_address, unsigned int requestID, BytePtr message, size_t len);
 
@@ -80,7 +82,8 @@ private:
 
     bool is_ACK(unsigned char *raw_content);
 
-    void handle_ACK(); //TODO implement
+    void handle_ACK(unsigned int requestID, const sockaddr_storage &client);
+
     void
     unpack_header(unsigned char *buf, unsigned int &requestID, unsigned int &overall_size, unsigned int &fragment_no);
 
