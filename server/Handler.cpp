@@ -202,19 +202,26 @@ bool Handler::is_duplicate_request(const sockaddr_storage *client_address, const
     return !(0 == stored_messages[*client_address].count(requestID));
 }
 
-void Handler::receive_handle_message(UdpServer_linux &server, const int semantic) {
+void Handler::resend_timeouted_messages(UdpServer_linux &server) {
     while (!timeout_times.empty()) {
         TimeoutElement te = timeout_times.top();
         if (std::get<0>(te) < std::chrono::steady_clock::now()) {
             //has timed out
             using std::get;
             MessagePair pair = stored_messages[get<1>(te)][get<2>(te)];
-            //send_complete_message(server, pair.first.get(), pair.second, get<3>(te), )
+            spdlog::info("Message with requestID {} from {} has timed out and is being resent.",
+                         get<2>(te), utils::get_in_addr_port_str(get<1>(te)));
+            send_complete_message(server, pair.first.get(), pair.second, get<2>(te), get<1>(te));
             timeout_times.pop();
             std::get<0>(te) = std::chrono::steady_clock::now() + std::chrono::milliseconds(constants::ACK_TIMEOUT);
             timeout_times.push(te);
         }
     }
+}
+
+void Handler::receive_handle_message(UdpServer_linux &server, const int semantic) {
+    resend_timeouted_messages(server);
+
     std::chrono::time_point<std::chrono::steady_clock> *next_timeout_ptr;
     if (!timeout_times.empty()) {
         auto next_timeout = std::get<0>(timeout_times.top());
@@ -229,6 +236,7 @@ void Handler::receive_handle_message(UdpServer_linux &server, const int semantic
     unsigned int requestID, overall_size, fragment_no;
     unpack_header(recvd_msg, requestID, overall_size, fragment_no);
     const sockaddr_storage &client_address = server.get_client_address();
+
     BytePtr raw_content = BytePtr(new unsigned char[overall_size]);
     unsigned int fragments_expected = overall_size / MAX_CONTENT_SIZE + 1;
     unsigned int cur_frag_no = 0;
@@ -248,8 +256,7 @@ void Handler::receive_handle_message(UdpServer_linux &server, const int semantic
     } while (cur_frag_no < fragments_expected);
 
     BytePtr raw_reply;
-    unsigned int raw_reply_length;
-    unsigned int service_no;
+    unsigned int raw_reply_length, service_no;
     utils::unpack(raw_content.get(), service_no);
     service(constants::service_codes.at((int) service_no), server, raw_content.get(), raw_reply, raw_reply_length);
 
@@ -289,6 +296,53 @@ MessagePair Handler::retrieve_stored_message(const sockaddr_storage &client_addr
     return stored_messages[client_address][requestID];
 }
 
+/**Checks if message is ack or duplicate, if so it handles this case and returns true
+ *
+ * @param server
+ * @param buffer
+ * @param client_address
+ * @param requestID
+ * @param fragment_no
+ * @return
+ */
+bool
+Handler::handle_ack_or_duplicate(UdpServer_linux &server, unsigned char *buffer, const sockaddr_storage &client_address,
+                                 unsigned int requestID, unsigned int fragment_no) {
+    if (is_ACK(buffer + HEADER_SIZE)) {
+        spdlog::debug("Received ack from {} for requestID {}", utils::get_in_addr_port_str(client_address),
+                      requestID);
+        handle_ACK(requestID, client_address);
+        return true;
+    }
+    if (is_duplicate_request(&client_address, requestID) && 0 == fragment_no) {
+        spdlog::info("Duplicate request, resend message {} to {}:{}", requestID,
+                     utils::get_in_addr_str(&client_address),
+                     utils::get_in_port(&client_address));
+        MessagePair msg_pair = retrieve_stored_message(client_address, requestID);
+        send_complete_message(server, msg_pair.first.get(), msg_pair.second, requestID, client_address);
+        return true;
+    }
+    return false;
+}
+
+bool Handler::check_if_correct_packet(UdpServer_linux &server, const sockaddr_storage *const exp_address,
+                                      const sockaddr_storage &client_address, unsigned int exp_requestID,
+                                      unsigned int requestID, unsigned int exp_fragment_no, unsigned int fragment_no,
+                                      unsigned char *dest_buf, unsigned char *recv_buffer, int n) {
+    if (nullptr == exp_address || utils::is_similar_sockaddr_storage(*exp_address, client_address)) { //correct sender
+        if (exp_requestID == requestID && exp_fragment_no == fragment_no) { //correct packet
+            memcpy(dest_buf, recv_buffer, n);
+            return true;
+        } //ignore wrong packet from correct sender
+        return false;
+    } else { // wrong sender, tell sender that server is busy
+        BytePtr busy_server_msg;
+        unsigned int busy_server_msg_len = utils::pack(busy_server_msg, constants::SERVER_BUSY);
+        send_complete_message(server, busy_server_msg.get(), busy_server_msg_len, requestID, client_address);
+        return false;
+    }
+}
+
 /** Receive only a specific packet (Client, port, requestID, fragment_no)
  *
  * Handles incoming ACK's and duplicate requests
@@ -312,42 +366,24 @@ int Handler::receive_specific_packet(UdpServer_linux &server, int semantic, cons
         int s, usec;
         if (no_timeout) s = usec = -1;
         else utils::future_duration_to_s_usec(*timeout_time, s, usec);
-        int n = server.receive_msg(buffer_mem, s, usec);
+
+        unsigned char recv_buffer[constants::MAX_PACKET_SIZE];
+        int n = server.receive_msg(recv_buffer, s, usec);
         if (n >= HEADER_SIZE) {
             unsigned int requestID, overall_size, fragment_no;
-            unpack_header(buffer_mem, requestID, overall_size, fragment_no);
+            unpack_header(recv_buffer, requestID, overall_size, fragment_no);
             const sockaddr_storage &client_address = server.get_client_address();
 
             if (semantic == constants::ATMOST) {
-                if (is_ACK(buffer_mem + HEADER_SIZE)) {
-                    spdlog::debug("Received ack from {} for requestID {}", utils::get_in_addr_port_str(client_address),
-                                  requestID);
-                    handle_ACK(requestID, client_address);
-                    continue;
-                }
-                if (is_duplicate_request(&client_address, requestID) && 0 == fragment_no) {
-                    spdlog::info("Duplicate request, resend message {} to {}:{}", requestID,
-                                 utils::get_in_addr_str(&client_address),
-                                 utils::get_in_port(&client_address));
-                    MessagePair msg_pair = retrieve_stored_message(client_address, requestID);
-                    send_complete_message(server, msg_pair.first.get(), msg_pair.second, requestID, client_address);
-                    continue;
-                }
+                bool handled = handle_ack_or_duplicate(server, recv_buffer, client_address, requestID, fragment_no);
+                if (handled) continue;
             }
 
-            //check if it is the packet we want
-            if (nullptr == exp_address || utils::is_similar_sockaddr_storage(*exp_address, client_address)) {
-                //correct sender
-                if (exp_requestID == requestID && exp_fragment_no == fragment_no) {
-                    //correct packet
-                    memcpy(dest_buf, buffer_mem, n);
-                    return n;
-                } //ignore wrong packet from correct sender
-            } else {
-                // wrong sender
-                //TODO tell sender that server is busy
-                continue;
-            }
+            bool correct_packet = check_if_correct_packet(server, exp_address, client_address, exp_requestID, requestID,
+                                                          exp_fragment_no, fragment_no, dest_buf, recv_buffer, n);
+            if (correct_packet) return n;
+            else continue;
+
         } else if (0 < n && n < HEADER_SIZE) {
             spdlog::warn("Received message with size {} < HEADER_SIZE", n);
         } else if (TIMEOUT == n) {

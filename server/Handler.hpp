@@ -49,9 +49,8 @@ private:
      */
     unordered_map<sockaddr_storage, unordered_map<unsigned int, MessagePair>, SockaddrStor_Hasher, SockaddrStor_Equal> stored_messages{};
 
+    ///priority queue to track when to resend messages that where not acknowledged
     std::priority_queue<TimeoutElement, std::vector<TimeoutElement>, TimeoutElement_less> timeout_times{};
-
-    unsigned char buffer_mem[constants::MAX_PACKET_SIZE];
 
     //----------------------- Services offered -----------------------
     void service_read(unsigned char *message, BytePtr &raw_result, unsigned int &result_length);
@@ -70,6 +69,8 @@ private:
 
     void service_last_mod_time(unsigned char *message, BytePtr &raw_result, unsigned int &result_length);
 
+    void resend_timeouted_messages(UdpServer_linux &server);
+
     //------------------------ stored_messages interaction ------------
     void store_message(const sockaddr_storage &client_address, unsigned int requestID, BytePtr message, size_t len);
 
@@ -83,6 +84,9 @@ private:
     bool is_ACK(unsigned char *raw_content);
 
     void handle_ACK(unsigned int requestID, const sockaddr_storage &client);
+
+    bool handle_ack_or_duplicate(UdpServer_linux &server, unsigned char *buffer, const sockaddr_storage &client_address,
+                                 unsigned int requestID, unsigned int fragment_no);
 
     void
     unpack_header(unsigned char *buf, unsigned int &requestID, unsigned int &overall_size, unsigned int &fragment_no);
@@ -98,6 +102,13 @@ private:
     int receive_specific_packet(UdpServer_linux &server, int semantic, const sockaddr_storage *const exp_address,
                                 unsigned int exp_requestID, unsigned int exp_fragment_no, unsigned char *dest_buf,
                                 int timeout_ms);
+
+
+    bool check_if_correct_packet(UdpServer_linux &server, const sockaddr_storage *const exp_address,
+                                 const sockaddr_storage &client_address, unsigned int exp_requestID,
+                                 unsigned int requestID,
+                                 unsigned int exp_fragment_no, unsigned int fragment_no, unsigned char *dest_buf,
+                                 unsigned char *recv_buffer, int n);
 };
 
 

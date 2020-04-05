@@ -36,6 +36,7 @@ namespace constants {
     constexpr int OFFSET_OUT_OF_BOUNDS = 2;
     constexpr int FILE_ALREADY_EMPTY = 3;
     constexpr int FILE_WAS_MODIFIED = 4;
+    constexpr int SERVER_BUSY = 11;
 
     //----------- service constants -----------------------------
     enum class Service_type : int {
@@ -69,6 +70,7 @@ namespace constants {
 }
 
 typedef std::shared_ptr<unsigned char[]> BytePtr;
+///0 shared pointer to message, 2 size of message
 typedef std::pair<BytePtr, size_t> MessagePair;
 typedef std::chrono::time_point<std::chrono::steady_clock> TimeStamp;
 /// 0 timeout time, 1 clientaddr, 2 requestID
