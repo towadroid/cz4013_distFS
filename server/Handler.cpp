@@ -128,17 +128,17 @@ Handler::service_register_client(unsigned char *message, BytePtr &raw_result, un
 void
 Handler::service_remove_all_content(unsigned char *message, BytePtr &raw_result, unsigned int &result_length,
                                     std::string &path_string) {
-    std::string path_string_intern;
-    utils::unpack(message, path_string_intern);
+    utils::unpack(message, path_string);
     try {
-        utils::remove_content_from_file(path{path_string_intern});
+        utils::remove_content_from_file(path{constants::FILE_DIR_PATH + path_string});
+        result_length = utils::pack(raw_result, constants::SUCCESS);
     } catch (const File_does_not_exist &e) {
         result_length = utils::pack(raw_result, constants::FILE_DOES_NOT_EXIST);
         path_string = "";
     } catch (const File_already_empty &e) {
+        result_length = utils::pack(raw_result, constants::SUCCESS);
         path_string = "";
     }
-    result_length = utils::pack(raw_result, constants::SUCCESS);
 }
 
 /**
@@ -151,10 +151,9 @@ Handler::service_remove_all_content(unsigned char *message, BytePtr &raw_result,
 void
 Handler::service_remove_last_char(unsigned char *message, BytePtr &raw_result, unsigned int &result_length,
                                   std::string &path_string) {
-    std::string path_string_intern;
-    utils::unpack(message, path_string_intern);
+    utils::unpack(message, path_string);
     try {
-        utils::remove_last_char(path{path_string_intern});
+        utils::remove_last_char(path{constants::FILE_DIR_PATH + path_string});
     } catch (const File_does_not_exist &e) {
         result_length = utils::pack(raw_result, constants::FILE_DOES_NOT_EXIST);
         path_string = "";
@@ -165,10 +164,10 @@ Handler::service_remove_last_char(unsigned char *message, BytePtr &raw_result, u
 }
 
 void Handler::service_last_mod_time(unsigned char *message, BytePtr &raw_result, unsigned int &result_length) {
-    std::string path;
-    utils::unpack(message, path);
-    int last_m_time = utils::get_last_mod_time(path);
-    result_length = utils::pack(raw_result, last_m_time);
+    std::string path_string;
+    utils::unpack(message, path_string);
+    int last_m_time = utils::get_last_mod_time(path{constants::FILE_DIR_PATH + path_string});
+    result_length = utils::pack(raw_result, constants::SUCCESS, last_m_time);
 }
 
 void Handler::notify_registered_clients(const std::string &filename, const UdpServer_linux &server) {

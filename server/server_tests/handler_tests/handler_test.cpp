@@ -56,6 +56,8 @@ using testing::_;
 using testing::ElementsAreArray;
 using testing::Args;
 
+using test_rsc::get_client;
+
 TEST(Handler, read) {
     spdlog::set_level(spdlog::level::trace);
     Handler h{};

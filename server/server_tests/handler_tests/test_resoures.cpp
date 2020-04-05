@@ -7,7 +7,7 @@
 #include "../../HelperClasses.hpp"
 #include <string>
 
-sockaddr_storage get_client(unsigned int i) {
+sockaddr_storage test_rsc::get_client(unsigned int i) {
     sockaddr_storage client{};
     client.ss_family = AF_INET;
     ((sockaddr_in *) &client)->sin_port = htons((short unsigned int) i);
@@ -15,6 +15,16 @@ sockaddr_storage get_client(unsigned int i) {
     std::string address_str{i_str + "." + i_str + "." + i_str + "." + i_str};
     inet_pton(AF_INET, address_str.c_str(), &((sockaddr_in *) &client)->sin_addr);
     return client;
+}
+
+void test_rsc::prepare_file() {
+    path test_file_path{constants::FILE_DIR_PATH + "test_file"};
+    try {
+        utils::remove_content_from_file(test_file_path);
+    } catch (const File_already_empty &err) {
+
+    }
+    utils::insert_to_file(test_file_path, test_file_content, 0);
 }
 
 namespace testing::internal {
