@@ -10,6 +10,7 @@
 #include "../../UdpServer_linux.hpp"
 #include "../../utils/packing.hpp"
 #include "spdlog/spdlog.h"
+#include "test_resoures.hpp"
 
 TEST(Handler, service_insert) {
     Handler h{};
@@ -47,33 +48,20 @@ TEST(Handler, service_read) {
     h.service(serviceType, server, raw_content.get(), raw_reply, raw_reply_length);
 }
 
-sockaddr_storage get_client1() {
-    sockaddr_storage client{};
-    client.ss_family = AF_INET;
-    ((sockaddr_in *) &client)->sin_port = htons(1234);
-    inet_pton(AF_INET, "123.0.0.1", &((sockaddr_in *) &client)->sin_addr);
-    return client;
-}
-
-sockaddr_storage get_client2() {
-    sockaddr_storage client{};
-    client.ss_family = AF_INET;
-    ((sockaddr_in *) &client)->sin_port = htons(1234);
-    inet_pton(AF_INET, "123.0.0.2", &((sockaddr_in *) &client)->sin_addr);
-    return client;
-}
-
 using testing::SetArrayArgument;
 using testing::ReturnRef;
 using testing::DoAll;
 using testing::Return;
+using testing::_;
+using testing::ElementsAreArray;
+using testing::Args;
 
 TEST(Handler, read) {
     spdlog::set_level(spdlog::level::trace);
     Handler h{};
     MockUdpServer_linux mock_server;
 
-    sockaddr_storage client1 = get_client1();
+    sockaddr_storage client1 = get_client(1);
 
     BytePtr raw1;
     unsigned int raw1_len = utils::pack(raw1, 1, std::string("file1"), 0, 5);
@@ -96,7 +84,7 @@ TEST(Handler, multiple_packets) {
     Handler h{};
     MockUdpServer_linux mock_server;
 
-    sockaddr_storage client1 = get_client1();
+    sockaddr_storage client1 = get_client(1);
 
     /* assume
      * constexpr int HEADER_SIZE = 12;
@@ -129,10 +117,26 @@ TEST(Handler, multiple_packets) {
     h.receive_handle_message(mock_server, constants::ATLEAST);
 }
 
+TEST(Match, easy_expect) {
+    MockUdpServer_linux mock_server;
+    EXPECT_CALL(mock_server, receive_msg_impl(nullptr, 0, 0))
+            .WillOnce(Return(15));
+    mock_server.receive_msg_impl(nullptr, 0, 0);
+}
+
+TEST(Match, array) {
+    MockUdpServer_linux mock_server;
+    MockHandler mock_handler;
+    unsigned char arr[] = {0x12, 0x34, 0x56};
+    EXPECT_CALL(mock_handler, send_complete_message(_, _, _, _, _))
+            .With(Args<1, 2>(ElementsAreArray(arr)));
+    mock_handler.send_complete_message(mock_server, arr, 3, 0, get_client(1));
+}
+
 // Show how to return by reference work and how to set an array
 TEST(Action, ref) {
     MockUdpServer_linux mock_server;
-    sockaddr_storage client1 = get_client1();
+    sockaddr_storage client1 = get_client(1);
     EXPECT_CALL(mock_server, get_client_address).WillOnce(ReturnRef(client1));
 
     sockaddr_storage tmp = mock_server.get_client_address();
