@@ -36,7 +36,8 @@ public:
     virtual ~Handler();
 
     virtual void service(Service_type service_type, const UdpServer_linux &server, unsigned char *complete_raw_content,
-                         BytePtr &raw_reply, unsigned int &raw_reply_length);
+                         BytePtr &raw_reply, unsigned int &raw_reply_length, const sockaddr_storage &client_address,
+                         unsigned int requestID);
 
     void receive_handle_message(UdpServer_linux &server, int semantic);
 
@@ -60,7 +61,7 @@ private:
     service_insert(unsigned char *message, BytePtr &raw_result, unsigned int &result_length, std::string &path_string);
 
     void service_register_client(unsigned char *message, BytePtr &raw_result, unsigned int &result_length,
-                                 const sockaddr_storage &client);
+                                 const sockaddr_storage &client, unsigned int requestID);
 
     void service_remove_all_content(unsigned char *message, BytePtr &raw_result, unsigned int &result_length,
                                     string &path_string);

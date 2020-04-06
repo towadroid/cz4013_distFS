@@ -18,7 +18,8 @@ using constants::Service_type;
  * @param[in] service_type enum specifying which service to execute
  */
 void Handler::service(Service_type service_type, const UdpServer_linux &server, unsigned char *complete_raw_content,
-                      BytePtr &raw_reply, unsigned int &raw_reply_length) {
+                      BytePtr &raw_reply, unsigned int &raw_reply_length, const sockaddr_storage &client_address,
+                      unsigned int requestID) {
     unsigned char *raw_content_wo_servno = complete_raw_content + 4;
     switch (service_type) {
         case Service_type::read: {
@@ -26,8 +27,7 @@ void Handler::service(Service_type service_type, const UdpServer_linux &server, 
             break;
         }
         case Service_type::register_client: {
-            service_register_client(raw_content_wo_servno, raw_reply, raw_reply_length,
-                                    server.get_client_address());
+            service_register_client(raw_content_wo_servno, raw_reply, raw_reply_length, client_address, requestID);
             break;
         }
         case Service_type::insert: {
@@ -110,11 +110,11 @@ Handler::service_insert(unsigned char *message, BytePtr &raw_result, unsigned in
 
 void
 Handler::service_register_client(unsigned char *message, BytePtr &raw_result, unsigned int &result_length,
-                                 const sockaddr_storage &client) {
+                                 const sockaddr_storage &client, unsigned int requestID) {
     std::string path_string;
     int mon_interval;
     utils::unpack(message, path_string, mon_interval);
-    registered_clients[path_string].push_back(MonitoringClient{client, mon_interval});
+    registered_clients[path_string].push_back(MonitoringClient{client, mon_interval, requestID});
     result_length = utils::pack(raw_result, constants::SUCCESS);
 }
 
@@ -178,12 +178,13 @@ void Handler::notify_registered_clients(const std::string &filename, const UdpSe
     for (auto it = file_reg_clients.begin(); it != file_reg_clients.end(); ++it) {
         if (it->expired()) file_reg_clients.erase(it);
         else {
-            std::string file_content = utils::read_file_to_string(path{filename});
+            std::string file_content = utils::read_file_to_string(path{constants::FILE_DIR_PATH + filename});
             BytePtr raw_content;
-            unsigned int raw_length = utils::pack(raw_content, filename, file_content);
-            send_complete_message(server, raw_content.get(), raw_length, constants::FILE_WAS_MODIFIED,
+            unsigned int raw_length = utils::pack(raw_content, constants::FILE_WAS_MODIFIED, filename, file_content);
+            send_complete_message(server, raw_content.get(), raw_length, it->getRequestId(),
                                   it->getAddress());
-            spdlog::info("Sent notification to client, that file {} has changed", filename);
+            spdlog::info("Sent notification to {}, that file {} has changed",
+                         utils::get_in_addr_port_str(it->getAddress()), filename);
         }
     }
 
@@ -258,7 +259,8 @@ void Handler::receive_handle_message(UdpServer_linux &server, const int semantic
     BytePtr raw_reply;
     unsigned int raw_reply_length, service_no;
     utils::unpack(raw_content.get(), service_no);
-    service(constants::service_codes.at((int) service_no), server, raw_content.get(), raw_reply, raw_reply_length);
+    service(constants::service_codes.at((int) service_no), server, raw_content.get(), raw_reply, raw_reply_length,
+            client_address, 0);
 
     send_complete_message(server, raw_reply.get(), raw_reply_length, requestID, client_address);
     spdlog::info("Reply for #{} sent to {}", requestID, utils::get_in_addr_port_str(client_address));

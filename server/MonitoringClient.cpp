@@ -9,12 +9,17 @@
  * @param[in] address
  * @param[in] monitor_interval in ms
  */
-MonitoringClient::MonitoringClient(sockaddr_storage address, int monitor_interval) : address(address) {
+MonitoringClient::MonitoringClient(sockaddr_storage address, int monitor_interval, unsigned int requestID) :
+        address(address), requestID(requestID) {
     end = std::chrono::steady_clock::now() + std::chrono::milliseconds{monitor_interval};
 }
 
 const sockaddr_storage &MonitoringClient::getAddress() const {
     return address;
+}
+
+unsigned int MonitoringClient::getRequestId() const {
+    return requestID;
 }
 
 bool MonitoringClient::isValid() const {

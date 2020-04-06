@@ -59,7 +59,7 @@ void executeHandler() {
     Handler h{};
     BytePtr raw_reply;
     unsigned int len;
-    h.service(constants::service_codes.at(1), server, buffer, raw_reply, len);
+    h.service(constants::service_codes.at(1), server, buffer, raw_reply, len, <#initializer#>, 0);
 }
 
 void logger() {

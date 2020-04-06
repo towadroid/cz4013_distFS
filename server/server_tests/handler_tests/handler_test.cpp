@@ -22,7 +22,7 @@ TEST(Handler, service_insert) {
     utils::pack(raw_content, 2, f_name, 3, to_write);
     BytePtr raw_reply;
     unsigned int raw_reply_length;
-    h.service(serviceType, server, raw_content.get(), raw_reply, raw_reply_length);
+    h.service(serviceType, server, raw_content.get(), raw_reply, raw_reply_length, get_client(1), 0);
 
 }
 
@@ -45,7 +45,7 @@ TEST(Handler, service_read) {
     unsigned int raw_reply_length;
     std::string filename{"file1"};
     utils::pack(raw_content, 2, filename, 3, 5);
-    h.service(serviceType, server, raw_content.get(), raw_reply, raw_reply_length);
+    h.service(serviceType, server, raw_content.get(), raw_reply, raw_reply_length, get_client(1), 0);
 }
 
 using testing::SetArrayArgument;
