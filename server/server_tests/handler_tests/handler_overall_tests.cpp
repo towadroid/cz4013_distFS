@@ -8,26 +8,7 @@
  *      all operations can be executed successfully (always status=SUCCESS)
  */
 
-#include "gtest/gtest.h"
-#include "gmock/gmock.h"
-#include "../mock_classes/MockHandler.hpp"
-#include "../mock_classes/MockUdpServer_linux.hpp"
-#include "../../utils/packing.hpp"
 #include "test_resoures.hpp"
-#include "../../HelperClasses.hpp"
-
-using testing::SetArrayArgument;
-using testing::ReturnRef;
-using testing::DoAll;
-using testing::Return;
-using testing::Args;
-using testing::ElementsAreArray;
-using testing::_;
-using testing::WithArg;
-
-using test_rsc::prepare_file;
-using test_rsc::get_client;
-
 
 
 TEST(Handler_overall, read) {
