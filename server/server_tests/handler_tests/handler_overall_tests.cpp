@@ -30,7 +30,7 @@ TEST(Handler_overall, read) {
                     Return(inc1_len)
                       )
             );
-    EXPECT_CALL(mock_server, get_client_address).WillRepeatedly(ReturnRef(client1));
+    EXPECT_CALL(mock_server, get_client_address).WillOnce(ReturnRef(client1));
 
     std::string file1_content{"01234567890123456789012345678901234567890123456789\n"
                               "\n"
@@ -65,7 +65,7 @@ TEST(Handler_overall, insert) {
                     Return(inc1_len)
                       )
             );
-    EXPECT_CALL(mock_server, get_client_address).WillRepeatedly(ReturnRef(client1));
+    EXPECT_CALL(mock_server, get_client_address).WillOnce(ReturnRef(client1));
 
     BytePtr er_raw; //expected reply raw
     unsigned int er_raw_len = utils::pack(er_raw, constants::SUCCESS);
@@ -99,7 +99,7 @@ TEST(Handler_overall, remove_content) {
                     Return(inc1_len)
                       )
             );
-    EXPECT_CALL(mock_server, get_client_address).WillRepeatedly(ReturnRef(client1));
+    EXPECT_CALL(mock_server, get_client_address).WillOnce(ReturnRef(client1));
 
     BytePtr er_raw; //expected reply raw
     unsigned int er_raw_len = utils::pack(er_raw, constants::SUCCESS);
@@ -133,7 +133,7 @@ TEST(Handler_overall, remove_last_char) {
                     Return(inc1_len)
                       )
             );
-    EXPECT_CALL(mock_server, get_client_address).WillRepeatedly(ReturnRef(client1));
+    EXPECT_CALL(mock_server, get_client_address).WillOnce(ReturnRef(client1));
 
     BytePtr er_raw; //expected reply raw
     unsigned int er_raw_len = utils::pack(er_raw, constants::SUCCESS);
@@ -169,7 +169,7 @@ TEST(Handler_overall, last_mod_time) {
                     Return(inc1_len)
                       )
             );
-    EXPECT_CALL(mock_server, get_client_address).WillRepeatedly(ReturnRef(client1));
+    EXPECT_CALL(mock_server, get_client_address).WillOnce(ReturnRef(client1));
 
     int actual_last_mod_time = utils::get_last_mod_time(path{constants::FILE_DIR_PATH + "test_file"});
 

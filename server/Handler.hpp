@@ -9,6 +9,7 @@
 #include "UdpServer_linux.hpp"
 #include "MonitoringClient.hpp"
 #include "HelperClasses.hpp"
+#include "ReceiveSpecifier.hpp"
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
@@ -95,20 +96,12 @@ private:
     virtual void send_complete_message(const UdpServer_linux &server, unsigned char *const raw_content_buf, size_t len,
                                        unsigned int requestID, const sockaddr_storage &receiver);
 
-    int receive_specific_packet(UdpServer_linux &server, int semantic, const sockaddr_storage *const exp_address,
-                                unsigned int exp_requestID, unsigned int exp_fragment_no, unsigned char *dest_buf,
-                                TimeStamp *const timeout_time);
+    int receive_specific_packet(UdpServer_linux &server, int semantic, ReceiveSpecifier &rcv_specifier,
+                                unsigned char *dest_buf);
 
-    int receive_specific_packet(UdpServer_linux &server, int semantic, const sockaddr_storage *const exp_address,
-                                unsigned int exp_requestID, unsigned int exp_fragment_no, unsigned char *dest_buf,
-                                int timeout_ms);
-
-
-    bool check_if_correct_packet(UdpServer_linux &server, const sockaddr_storage *const exp_address,
+    bool check_if_correct_packet(UdpServer_linux &server, const sockaddr_storage &exp_address,
                                  const sockaddr_storage &client_address, unsigned int exp_requestID,
-                                 unsigned int requestID,
-                                 unsigned int exp_fragment_no, unsigned int fragment_no, unsigned char *dest_buf,
-                                 unsigned char *recv_buffer, int n);
+                                 unsigned int requestID, unsigned int exp_fragment_no, unsigned int fragment_no);
 };
 
 

@@ -221,20 +221,21 @@ void Handler::resend_timeouted_messages(UdpServer_linux &server) {
 void Handler::receive_handle_message(UdpServer_linux &server, const int semantic) {
     resend_timeouted_messages(server);
 
-    std::chrono::time_point<std::chrono::steady_clock> *next_timeout_ptr;
+    ReceiveSpecifier recv_spec{};
+
     if (!timeout_times.empty()) {
         auto next_timeout = std::get<0>(timeout_times.top());
-        next_timeout_ptr = &next_timeout;
-    } else next_timeout_ptr = nullptr;
+        recv_spec = ReceiveSpecifier(next_timeout);
+    } else recv_spec = ReceiveSpecifier();
 
 
     unsigned char recvd_msg[MAX_PACKET_SIZE];
 
-    receive_specific_packet(server, semantic, nullptr, 0, 0, recvd_msg, next_timeout_ptr);
+    receive_specific_packet(server, semantic, recv_spec, recvd_msg);
 
     unsigned int requestID, overall_size, fragment_no;
     unpack_header(recvd_msg, requestID, overall_size, fragment_no);
-    const sockaddr_storage &client_address = server.get_client_address();
+    const sockaddr_storage &client_address = recv_spec.getExpAddress();
 
     BytePtr raw_content = BytePtr(new unsigned char[overall_size]);
     unsigned int fragments_expected = overall_size / MAX_CONTENT_SIZE + 1;
@@ -244,14 +245,14 @@ void Handler::receive_handle_message(UdpServer_linux &server, const int semantic
         if (cur_frag_no + 1 == fragments_expected) cur_len = overall_size % MAX_CONTENT_SIZE;
         memcpy(&raw_content[cur_frag_no * MAX_CONTENT_SIZE], recvd_msg + HEADER_SIZE, cur_len);
         ++cur_frag_no;
-        if (cur_frag_no < fragments_expected)
-            if (DID_NOT_RECEIVE ==
-                receive_specific_packet(server, semantic, &client_address, requestID, cur_frag_no, recvd_msg,
-                                        constants::FRAG_TIMEOUT)) {
+        if (cur_frag_no < fragments_expected) {
+            recv_spec = ReceiveSpecifier(constants::FRAG_TIMEOUT, client_address, requestID, cur_frag_no);
+            if (DID_NOT_RECEIVE == receive_specific_packet(server, semantic, recv_spec, recvd_msg)) {
                 spdlog::warn("Did not receive expected packet, abort receive operation.");
                 //TODO wrong packet received
                 return;
             }
+        }
     } while (cur_frag_no < fragments_expected);
 
     BytePtr raw_reply;
@@ -324,16 +325,29 @@ Handler::handle_ack_or_duplicate(UdpServer_linux &server, unsigned char *buffer,
     return false;
 }
 
-bool Handler::check_if_correct_packet(UdpServer_linux &server, const sockaddr_storage *const exp_address,
+/**Checks if the specific expected packet is being received
+ *
+ * If from different sender, tell him that server is busy
+ *
+ * @param server
+ * @param exp_address
+ * @param client_address
+ * @param exp_requestID
+ * @param requestID
+ * @param exp_fragment_no
+ * @param fragment_no
+ * @param dest_buf
+ * @param recv_buffer
+ * @param n
+ * @return
+ */
+bool Handler::check_if_correct_packet(UdpServer_linux &server, const sockaddr_storage &exp_address,
                                       const sockaddr_storage &client_address, unsigned int exp_requestID,
-                                      unsigned int requestID, unsigned int exp_fragment_no, unsigned int fragment_no,
-                                      unsigned char *dest_buf, unsigned char *recv_buffer, int n) {
-    if (nullptr == exp_address || utils::is_similar_sockaddr_storage(*exp_address, client_address)) { //correct sender
-        if (exp_requestID == requestID && exp_fragment_no == fragment_no) { //correct packet
-            memcpy(dest_buf, recv_buffer, n);
-            return true;
-        } //ignore wrong packet from correct sender
-        return false;
+                                      unsigned int requestID, unsigned int exp_fragment_no, unsigned int fragment_no
+) {
+    if (utils::is_similar_sockaddr_storage(exp_address, client_address)) { //correct sender
+        return exp_requestID == requestID &&
+               exp_fragment_no == fragment_no;         //ignore wrong packet from correct sender
     } else { // wrong sender, tell sender that server is busy
         BytePtr busy_server_msg;
         unsigned int busy_server_msg_len = utils::pack(busy_server_msg, constants::SERVER_BUSY);
@@ -342,47 +356,45 @@ bool Handler::check_if_correct_packet(UdpServer_linux &server, const sockaddr_st
     }
 }
 
-/** Receive only a specific packet (Client, port, requestID, fragment_no)
+/**Receive any or a specific packet (Client, port, requestID, fragment_no)
  *
  * Handles incoming ACK's and duplicate requests
- * returns
  *
  * @param server
  * @param semantic
- * @param exp_address[in] the client we want to receive from
- *          if nullptr: receive from any, then exp_requestID, exp_fragment_no and exp_len are ignored
- * @param exp_requestID
- * @param exp_fragment_no
- * @param exp_len
- * @param timeout_time[in] time, until when we should wait for the spcecific packet, if nullptr -> wait forever
+ * @param rcv_specifier specifies whether we want a timeout and whether we expect a specific packet
+ *     if we do not expect a specific packet, rcv_specifier.expAddress will be set as the receiver
+ * @param dest_buf
  * @return status code
  */
-int Handler::receive_specific_packet(UdpServer_linux &server, int semantic, const sockaddr_storage *const exp_address,
-                                     unsigned int exp_requestID, unsigned int exp_fragment_no, unsigned char *dest_buf,
-                                     TimeStamp *const timeout_time) {
-    bool no_timeout = nullptr == timeout_time;
-    while (no_timeout || std::chrono::steady_clock::now() < *timeout_time) {
+int Handler::receive_specific_packet(UdpServer_linux &server, int semantic, ReceiveSpecifier &rcv_specifier,
+                                     unsigned char *dest_buf) {
+    while (!rcv_specifier.is_timeouted()) {
         int s, usec;
-        if (no_timeout) s = usec = -1;
-        else utils::future_duration_to_s_usec(*timeout_time, s, usec);
+        rcv_specifier.time_in_s_usec(s, usec);
 
         unsigned char recv_buffer[constants::MAX_PACKET_SIZE];
         int n = server.receive_msg(recv_buffer, s, usec);
         if (n >= HEADER_SIZE) {
             unsigned int requestID, overall_size, fragment_no;
             unpack_header(recv_buffer, requestID, overall_size, fragment_no);
-            const sockaddr_storage &client_address = server.get_client_address();
+            const sockaddr_storage client_address = server.get_client_address();
+
+            if (!rcv_specifier.is_specific()) rcv_specifier.setExpAddress(client_address);
 
             if (semantic == constants::ATMOST) {
                 bool handled = handle_ack_or_duplicate(server, recv_buffer, client_address, requestID, fragment_no);
                 if (handled) continue;
             }
 
-            bool correct_packet = check_if_correct_packet(server, exp_address, client_address, exp_requestID, requestID,
-                                                          exp_fragment_no, fragment_no, dest_buf, recv_buffer, n);
-            if (correct_packet) return n;
-            else continue;
-
+            if (rcv_specifier.is_specific()) {
+                bool correct_packet = check_if_correct_packet(server, rcv_specifier.getExpAddress(), client_address,
+                                                              rcv_specifier.getExpRequestId(), requestID,
+                                                              rcv_specifier.getExpFragmentNo(), fragment_no);
+                if (!correct_packet) continue;
+            }
+            memcpy(dest_buf, recv_buffer, n);
+            return n;
         } else if (0 < n && n < HEADER_SIZE) {
             spdlog::warn("Received message with size {} < HEADER_SIZE", n);
         } else if (TIMEOUT == n) {
@@ -390,14 +402,6 @@ int Handler::receive_specific_packet(UdpServer_linux &server, int semantic, cons
         }
     }
     return DID_NOT_RECEIVE;
-}
-
-int Handler::receive_specific_packet(UdpServer_linux &server, int semantic, const sockaddr_storage *const exp_address,
-                                     unsigned int exp_requestID, unsigned int exp_fragment_no, unsigned char *dest_buf,
-                                     int timeout_ms) {
-    auto timeout_time = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_ms);
-    return receive_specific_packet(server, semantic, exp_address, exp_requestID, exp_fragment_no, dest_buf,
-                                   &timeout_time);
 }
 
 bool Handler::is_ACK(unsigned char *raw_content) {
@@ -428,3 +432,4 @@ void Handler::unpack_header(unsigned char *buf, unsigned int &requestID, unsigne
 Handler::~Handler() {
 
 }
+
