@@ -39,6 +39,8 @@ namespace utils {
 
     int get_last_mod_time(const path &path);
 
+    bool file_exists(const path &path);
+
     //-------------- internet address -------------------
     int get_in_port(sockaddr_storage const *sock_storage);
 

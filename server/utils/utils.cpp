@@ -126,6 +126,11 @@ void utils::remove_last_char(const path &path) {
     myfile << content;
 }
 
+
+bool utils::file_exists(const path &path) {
+    return std::filesystem::exists(path);
+}
+
 /** Get sockaddr, IPv4 or IPv6:
  *
  * @param sa socketaddr, that contains the address
@@ -194,6 +199,7 @@ bool utils::is_expected_size_and_format() {
  * @return
  */
 int utils::get_last_mod_time(const path &path) {
+    if (!std::filesystem::exists(path)) throw File_does_not_exist("Could not insert into file", path);
     struct stat attrib;
     int err = stat(path.string().c_str(), &attrib);
     if (err != 0) perror("Could not read last modification time");

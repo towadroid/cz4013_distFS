@@ -114,8 +114,12 @@ Handler::service_register_client(unsigned char *message, BytePtr &raw_result, un
     std::string path_string;
     int mon_interval;
     utils::unpack(message, path_string, mon_interval);
-    registered_clients[path_string].push_back(MonitoringClient{client, mon_interval, requestID});
-    result_length = utils::pack(raw_result, constants::SUCCESS);
+    if (!utils::file_exists(constants::FILE_DIR_PATH + path_string))
+        result_length = utils::pack(raw_result, constants::FILE_DOES_NOT_EXIST);
+    else {
+        registered_clients[path_string].push_back(MonitoringClient{client, mon_interval, requestID});
+        result_length = utils::pack(raw_result, constants::SUCCESS);
+    }
 }
 
 /**
@@ -154,6 +158,7 @@ Handler::service_remove_last_char(unsigned char *message, BytePtr &raw_result, u
     utils::unpack(message, path_string);
     try {
         utils::remove_last_char(path{constants::FILE_DIR_PATH + path_string});
+        result_length = utils::pack(raw_result, constants::SUCCESS);
     } catch (const File_does_not_exist &e) {
         result_length = utils::pack(raw_result, constants::FILE_DOES_NOT_EXIST);
         path_string = "";
@@ -161,14 +166,18 @@ Handler::service_remove_last_char(unsigned char *message, BytePtr &raw_result, u
         result_length = utils::pack(raw_result, constants::FILE_ALREADY_EMPTY);
         path_string = "";
     }
-    result_length = utils::pack(raw_result, constants::SUCCESS);
 }
 
 void Handler::service_last_mod_time(unsigned char *message, BytePtr &raw_result, unsigned int &result_length) {
     std::string path_string;
     utils::unpack(message, path_string);
-    int last_m_time = utils::get_last_mod_time(path{constants::FILE_DIR_PATH + path_string});
-    result_length = utils::pack(raw_result, constants::SUCCESS, last_m_time);
+    try {
+        int last_m_time = utils::get_last_mod_time(path{constants::FILE_DIR_PATH + path_string});
+        result_length = utils::pack(raw_result, constants::SUCCESS, last_m_time);
+    } catch (const File_does_not_exist &e) {
+        result_length = utils::pack(raw_result, constants::FILE_DOES_NOT_EXIST);
+    }
+
 }
 
 void Handler::notify_registered_clients(const std::string &filename, const UdpServer_linux &server) {
@@ -356,8 +365,7 @@ Handler::handle_ack_or_duplicate(UdpServer_linux &server, unsigned char *buffer,
  */
 bool Handler::check_if_correct_packet(UdpServer_linux &server, const sockaddr_storage &exp_address,
                                       const sockaddr_storage &client_address, unsigned int exp_requestID,
-                                      unsigned int requestID, unsigned int exp_fragment_no, unsigned int fragment_no
-) {
+                                      unsigned int requestID, unsigned int exp_fragment_no, unsigned int fragment_no) {
     if (utils::is_similar_sockaddr_storage(exp_address, client_address)) { //correct sender
         return exp_requestID == requestID &&
                exp_fragment_no == fragment_no;         //ignore wrong packet from correct sender
@@ -433,8 +441,11 @@ void Handler::handle_ACK(unsigned int requestID, const sockaddr_storage &client)
             client_map.erase(requestID);
             spdlog::info("Stored message #{} of {} was removed from stored list.",
                          requestID, utils::get_in_addr_port_str(client));
+            return;
         }
     }
+    spdlog::info("Received ack for #{} of {} but  corresponding reply is not in stored list (anymore).",
+                 requestID, utils::get_in_addr_port_str(client));
 }
 
 void Handler::unpack_header(unsigned char *buf, unsigned int &requestID, unsigned int &overall_size,
