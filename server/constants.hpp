@@ -25,7 +25,7 @@ namespace constants {
     constexpr int CACHE_BLOCK_SIZE = 100;
 
     /// timeout time waiting for ack's in ms
-    constexpr int ACK_TIMEOUT = 60000;
+    constexpr int ACK_TIMEOUT = 10000; //TODO maybe higher value?
 
     /// time to wait for next fragment in ms
     constexpr int FRAG_TIMEOUT = 10000;

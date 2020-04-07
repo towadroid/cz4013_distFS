@@ -158,6 +158,7 @@ Handler::service_remove_last_char(unsigned char *message, BytePtr &raw_result, u
         result_length = utils::pack(raw_result, constants::FILE_DOES_NOT_EXIST);
         path_string = "";
     } catch (const File_already_empty &e) {
+        result_length = utils::pack(raw_result, constants::FILE_ALREADY_EMPTY);
         path_string = "";
     }
     result_length = utils::pack(raw_result, constants::SUCCESS);
@@ -195,6 +196,8 @@ void
 Handler::store_message(const sockaddr_storage &client_address, const unsigned int requestID, const BytePtr message,
                        const size_t len) {
     stored_messages[client_address][requestID] = MessagePair{message, len};
+    spdlog::info("Message #{} of {} added to stored list.",
+                 requestID, utils::get_in_addr_port_str(client_address));
 }
 
 bool Handler::is_duplicate_request(const sockaddr_storage *client_address, const unsigned int requestID) {
@@ -210,13 +213,13 @@ void Handler::resend_timeouted_messages(UdpServer_linux &server) {
             //has timed out
             using std::get;
             MessagePair pair = stored_messages[get<1>(te)][get<2>(te)];
-            spdlog::info("Message with requestID {} from {} has timed out and is being resent.",
+            spdlog::info("Message #{} from {} has timed out and is being resent.",
                          get<2>(te), utils::get_in_addr_port_str(get<1>(te)));
             send_complete_message(server, pair.first.get(), pair.second, get<2>(te), get<1>(te));
             timeout_times.pop();
             std::get<0>(te) = std::chrono::steady_clock::now() + std::chrono::milliseconds(constants::ACK_TIMEOUT);
             timeout_times.push(te);
-        }
+        } else break;
     }
 }
 
@@ -233,7 +236,9 @@ void Handler::receive_handle_message(UdpServer_linux &server, const int semantic
 
     unsigned char recvd_msg[MAX_PACKET_SIZE];
 
-    receive_specific_packet(server, semantic, recv_spec, recvd_msg);
+    if (DID_NOT_RECEIVE == receive_specific_packet(server, semantic, recv_spec, recvd_msg)) {
+        return;
+    }
 
     unsigned int requestID, overall_size, fragment_no;
     unpack_header(recvd_msg, requestID, overall_size, fragment_no);
@@ -266,8 +271,13 @@ void Handler::receive_handle_message(UdpServer_linux &server, const int semantic
     send_complete_message(server, raw_reply.get(), raw_reply_length, requestID, client_address);
     spdlog::info("Reply for #{} sent to {}", requestID, utils::get_in_addr_port_str(client_address));
 
-    if (semantic == constants::ATMOST)
-        store_message(client_address, requestID, raw_content, (unsigned int) overall_size);
+    if (semantic == constants::ATMOST) {
+        store_message(client_address, requestID, raw_reply, raw_reply_length);
+        using std::chrono::steady_clock;
+        TimeoutElement timeout_elem{steady_clock::now() + std::chrono::milliseconds(constants::ACK_TIMEOUT),
+                                    client_address, requestID};
+        timeout_times.push(timeout_elem);
+    }
 }
 
 /** Given a buffer for raw content to send and its length, send the eventually fragmented message
@@ -400,7 +410,7 @@ int Handler::receive_specific_packet(UdpServer_linux &server, int semantic, Rece
             return n;
         } else if (0 < n && n < HEADER_SIZE) {
             spdlog::warn("Received message with size {} < HEADER_SIZE", n);
-        } else if (TIMEOUT == n) {
+        } else if (UdpServer_linux::TIMEOUT == n) {
             return DID_NOT_RECEIVE;
         }
     }
@@ -421,8 +431,8 @@ void Handler::handle_ACK(unsigned int requestID, const sockaddr_storage &client)
         auto stored_entry = client_map.find(requestID);
         if (stored_entry != client_map.end()) {
             client_map.erase(requestID);
-            spdlog::info("Stored message {} for client was removed from stored list.", requestID,
-                         utils::get_in_addr_port_str(client));
+            spdlog::info("Stored message #{} of {} was removed from stored list.",
+                         requestID, utils::get_in_addr_port_str(client));
         }
     }
 }

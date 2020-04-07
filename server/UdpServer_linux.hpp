@@ -8,8 +8,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-constexpr int TIMEOUT = -5;
-constexpr int FUNCTION_ERROR = -10;
 
 class UdpServer_linux {
 private:
@@ -21,6 +19,9 @@ private:
 
 
 public:
+    static constexpr int TIMEOUT = -5;
+    static constexpr int FUNCTION_ERROR = -10;
+
     explicit UdpServer_linux(int portno, double failure_rate = 0);
 
     virtual ~UdpServer_linux();
