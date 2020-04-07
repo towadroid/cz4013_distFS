@@ -373,6 +373,8 @@ bool Handler::check_if_correct_packet(UdpServer_linux &server, const sockaddr_st
         BytePtr busy_server_msg;
         unsigned int busy_server_msg_len = utils::pack(busy_server_msg, constants::SERVER_BUSY);
         send_complete_message(server, busy_server_msg.get(), busy_server_msg_len, requestID, client_address);
+        spdlog::info("Sent 'Server busy' as reply to #{} of {}", requestID,
+                     utils::get_in_addr_port_str(client_address));
         return false;
     }
 }
