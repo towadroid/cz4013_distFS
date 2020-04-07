@@ -5,12 +5,9 @@
 #include "spdlog/spdlog.h"
 #include "UdpServer_linux.hpp"
 #include "Handler.hpp"
-//#include "globalvar.hpp"
 
 using std::cout;
 using std::endl;
-
-int semantic = 0;
 
 /**Convert string to number
  *
@@ -59,6 +56,7 @@ int main(int argc, char **argv) {
     int c;
     double failure_rate = 0;
     int port_no = 2302;
+    int semantic = 0;
 
     static struct option long_options[] = {
             /* These options set a flag. */

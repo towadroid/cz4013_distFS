@@ -4,7 +4,7 @@
 
 #include <arpa/inet.h>
 #include "test_resoures.hpp"
-#include "../../HelperClasses.hpp"
+#include "../../HelperClasses/HelperClasses.hpp"
 #include <string>
 
 sockaddr_storage test_rsc::get_client(unsigned int i) {

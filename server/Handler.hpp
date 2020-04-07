@@ -7,9 +7,9 @@
 
 #include "constants.hpp"
 #include "UdpServer_linux.hpp"
-#include "MonitoringClient.hpp"
-#include "HelperClasses.hpp"
-#include "ReceiveSpecifier.hpp"
+#include "HelperClasses/MonitoringClient.hpp"
+#include "HelperClasses/HelperClasses.hpp"
+#include "HelperClasses/ReceiveSpecifier.hpp"
 #include <type_traits>
 #include <unordered_map>
 #include <vector>

@@ -33,7 +33,8 @@ TEST(Packing, unpack_integers) {
     buffer[2] = 0x26;
     buffer[3] = 0x84;
     int value_signed = 0xF3002684, value_s_unpacked;
-    unsigned int value_unsigned = 0xF3002684, value_u_unpacked;
+    unsigned int value_unsigned = 0xF3002684;
+    unsigned int value_u_unpacked;
     utils::unpack(buffer.get(), value_s_unpacked);
     utils::unpack(buffer.get(), value_u_unpacked);
     EXPECT_EQ(value_s_unpacked, value_signed);

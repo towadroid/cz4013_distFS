@@ -5,8 +5,8 @@
 #ifndef SERVER_RECEIVESPECIFIER_HPP
 #define SERVER_RECEIVESPECIFIER_HPP
 
-#include "constants.hpp"
-#include "UdpServer_linux.hpp"
+#include "../constants.hpp"
+#include "../UdpServer_linux.hpp"
 #include "MonitoringClient.hpp"
 
 class ReceiveSpecifier {

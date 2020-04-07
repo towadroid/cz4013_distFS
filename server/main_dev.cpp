@@ -8,13 +8,13 @@
 #include "utils/utils.hpp"
 #include "utils/packing.hpp"
 #include "Handler.hpp"
-#include "MonitoringClient.hpp"
+#include "HelperClasses/MonitoringClient.hpp"
 #include "spdlog/spdlog.h"
 #include "spdlog/logger.h"
-#include "HelperClasses.hpp"
+#include "HelperClasses/HelperClasses.hpp"
 
 #include <chrono>
-#include "HelperClasses.hpp"
+#include "HelperClasses/HelperClasses.hpp"
 /*
 #include <thread>
 std::this_thread::sleep_for(std::chrono::milliseconds(100)); // sleep for x ms*/

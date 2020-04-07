@@ -12,7 +12,7 @@
 #include <sys/stat.h>
 #include "spdlog/spdlog.h"
 #include "utils.hpp"
-#include "../HelperClasses.hpp"
+#include "../HelperClasses/HelperClasses.hpp"
 
 namespace fs = std::filesystem;
 

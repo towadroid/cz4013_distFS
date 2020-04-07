@@ -110,7 +110,7 @@ unsigned int internals::unpack(unsigned char *result, int &a) {
 }
 
 unsigned int internals::unpack(unsigned char *result, unsigned int &a) {
-    a = unpackin<unsigned int>(32, result);
+    a = unpackun<unsigned int>(32, result);
     return calc_size(a);
 }
 

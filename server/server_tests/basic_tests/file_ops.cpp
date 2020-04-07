@@ -7,7 +7,7 @@
 #include <string>
 #include <fstream>
 #include "../../constants.hpp"
-#include "../../HelperClasses.hpp"
+#include "../../HelperClasses/HelperClasses.hpp"
 
 std::filesystem::path create_non_empty_file(std::string file_name) {
     file_name.insert(0, constants::FILE_DIR_PATH);
