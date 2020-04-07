@@ -175,8 +175,8 @@ void Handler::notify_registered_clients(const std::string &filename, const UdpSe
     try { file_reg_clients = registered_clients.at(filename); }
     catch (const std::out_of_range &oor) {} // there is no entry for this filename => nothing to doo
 
-    for (auto it = file_reg_clients.begin(); it != file_reg_clients.end(); ++it) {
-        if (it->expired()) file_reg_clients.erase(it);
+    for (auto it = file_reg_clients.begin(); it != file_reg_clients.end();) {
+        if (it->expired()) it = file_reg_clients.erase(it);
         else {
             std::string file_content = utils::read_file_to_string(path{constants::FILE_DIR_PATH + filename});
             BytePtr raw_content;
@@ -185,6 +185,7 @@ void Handler::notify_registered_clients(const std::string &filename, const UdpSe
                                   it->getAddress());
             spdlog::info("Sent notification to {}, that file {} has changed",
                          utils::get_in_addr_port_str(it->getAddress()), filename);
+            ++it;
         }
     }
 

@@ -17,8 +17,8 @@ sockaddr_storage test_rsc::get_client(unsigned int i) {
     return client;
 }
 
-void test_rsc::prepare_file() {
-    path test_file_path{constants::FILE_DIR_PATH + "test_file"};
+void test_rsc::prepare_file(const std::string &file_path) {
+    path test_file_path{constants::FILE_DIR_PATH + file_path};
     try {
         utils::remove_content_from_file(test_file_path);
     } catch (const File_already_empty &err) {

@@ -15,7 +15,7 @@
 namespace test_rsc {
     sockaddr_storage get_client(unsigned int i);
 
-    void prepare_file();
+    void prepare_file(const std::string &file_path = std::string{"test_file"});
 
     const std::string test_file_content{
             "0123456789\n"
