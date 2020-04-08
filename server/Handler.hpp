@@ -35,7 +35,7 @@ class Handler {
 public:
     virtual ~Handler();
 
-    virtual void service(Service_type service_type, const UdpServer_linux &server, unsigned char *complete_raw_content,
+    virtual void service(Service_type service_type, UdpServer_linux &server, unsigned char *complete_raw_content,
                          BytePtr &raw_reply, unsigned int &raw_reply_length, const sockaddr_storage &client_address,
                          unsigned int requestID);
 
@@ -79,7 +79,7 @@ private:
 
     MessagePair retrieve_stored_message(const sockaddr_storage &client_address, unsigned int requestID);
 
-    void notify_registered_clients(const string &filename, const UdpServer_linux &server);
+    void notify_registered_clients(const string &filename, UdpServer_linux &server);
 
     bool is_duplicate_request(const sockaddr_storage *client_address, const unsigned int requestID);
 
@@ -94,7 +94,7 @@ private:
     unpack_header(unsigned char *buf, unsigned int &requestID, unsigned int &overall_size, unsigned int &fragment_no);
 
     //----------------------- server interaction ------------------------
-    virtual void send_complete_message(const UdpServer_linux &server, unsigned char *const raw_content_buf, size_t len,
+    virtual void send_complete_message(UdpServer_linux &server, unsigned char *const raw_content_buf, size_t len,
                                        unsigned int requestID, const sockaddr_storage &receiver);
 
     int receive_specific_packet(UdpServer_linux &server, int semantic, ReceiveSpecifier &rcv_specifier,

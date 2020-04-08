@@ -59,7 +59,8 @@ void executeHandler() {
     Handler h{};
     BytePtr raw_reply;
     unsigned int len;
-    h.service(constants::service_codes.at(1), server, buffer, raw_reply, len, <#initializer#>, 0);
+    sockaddr_storage dummy{};
+    h.service(constants::service_codes.at(1), server, buffer, raw_reply, len, dummy, 0);
 }
 
 void logger() {

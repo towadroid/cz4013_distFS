@@ -17,7 +17,7 @@ using constants::Service_type;
  *
  * @param[in] service_type enum specifying which service to execute
  */
-void Handler::service(Service_type service_type, const UdpServer_linux &server, unsigned char *complete_raw_content,
+void Handler::service(Service_type service_type, UdpServer_linux &server, unsigned char *complete_raw_content,
                       BytePtr &raw_reply, unsigned int &raw_reply_length, const sockaddr_storage &client_address,
                       unsigned int requestID) {
     unsigned char *raw_content_wo_servno = complete_raw_content + 4;
@@ -180,7 +180,7 @@ void Handler::service_last_mod_time(unsigned char *message, BytePtr &raw_result,
 
 }
 
-void Handler::notify_registered_clients(const std::string &filename, const UdpServer_linux &server) {
+void Handler::notify_registered_clients(const std::string &filename, UdpServer_linux &server) {
     std::vector<MonitoringClient> file_reg_clients;
     try { file_reg_clients = registered_clients.at(filename); }
     catch (const std::out_of_range &oor) {} // there is no entry for this filename => nothing to doo
@@ -297,11 +297,13 @@ void Handler::receive_handle_message(UdpServer_linux &server, const int semantic
  * @param requestID
  * @param receiver
  */
-void Handler::send_complete_message(const UdpServer_linux &server, unsigned char *const raw_content_buf, size_t len,
+void Handler::send_complete_message(UdpServer_linux &server, unsigned char *const raw_content_buf, size_t len,
                                     unsigned int requestID, const sockaddr_storage &receiver) {
     BytePtr result;
     BytePtr partial_header;
     unsigned int partial_header_len = utils::pack(partial_header, requestID, (int) len);
+
+    int status;
 
     size_t cur_content_len = MAX_CONTENT_SIZE;
     unsigned int fragments_to_send = (unsigned int) len / MAX_CONTENT_SIZE + 1;
@@ -310,7 +312,10 @@ void Handler::send_complete_message(const UdpServer_linux &server, unsigned char
 
         utils::pack(result, partial_header_len, partial_header.get(), cur_frag_no,
                     (unsigned int) cur_content_len, raw_content_buf + cur_frag_no * MAX_CONTENT_SIZE);
-        server.send_packet(result.get(), cur_content_len + HEADER_SIZE, &receiver);
+        status = server.send_packet(result.get(), cur_content_len + HEADER_SIZE, receiver);
+        if (status == UdpServer_linux::SIMULATED_FAILURE)
+            spdlog::info("Simulated failure: Message #{}, packet with fragment no. {} to {} was not sent.",
+                         requestID, cur_frag_no, utils::get_in_addr_port_str(receiver));
     }
 }
 
@@ -446,7 +451,7 @@ void Handler::handle_ACK(unsigned int requestID, const sockaddr_storage &client)
             return;
         }
     }
-    spdlog::info("Received ack for #{} of {} but  corresponding reply is not in stored list (anymore).",
+    spdlog::info("Received ack for #{} of {} but corresponding reply is not in stored list (anymore).",
                  requestID, utils::get_in_addr_port_str(client));
 }
 

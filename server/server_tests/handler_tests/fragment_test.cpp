@@ -230,3 +230,70 @@ TEST(fragments, wrong_fragment_wrong_sender) {
 
     delete[] buffer;
 }
+
+/**
+ * Assumes that 3 Cache block sizes > max content size
+ */
+TEST(fragments, outgoing) {
+    Handler handler;
+    MockUdpServer_linux mock_server;
+    prepare_file();
+
+    sockaddr_storage client1 = get_client(1);
+    unsigned int requestID = 0;
+    std::string file_content{};
+
+    for (int i = 1; i <= 3 * constants::CACHE_BLOCK_SIZE; ++i) {
+        file_content.append("o");
+    }
+
+    utils::remove_content_from_file(constants::FILE_DIR_PATH + "test_file");
+    utils::insert_to_file(constants::FILE_DIR_PATH + "test_file", file_content, 0);
+
+    BytePtr raw1;
+    unsigned int raw1_len = utils::pack(raw1, 1, std::string("test_file"), 0, 3 * constants::CACHE_BLOCK_SIZE);
+
+    BytePtr inc_frag1;
+    unsigned int inc1_len = utils::pack(inc_frag1, requestID, raw1_len, 0, raw1_len, raw1.get());
+
+    EXPECT_CALL(mock_server, receive_msg_impl)
+            .WillOnce(DoAll(
+                    SetArrayArgument<0>(inc_frag1.get(), inc_frag1.get() + inc1_len),
+                    Return(inc1_len)));
+    EXPECT_CALL(mock_server, get_client_address)
+            .WillOnce(ReturnRef(client1));
+
+
+    unsigned int first_string_len = constants::MAX_CONTENT_SIZE - 4 - 4;
+    auto overall_string_len = (unsigned int) file_content.length();
+    unsigned int sec_string_len = overall_string_len - first_string_len;
+
+    auto *buffer = new unsigned char[first_string_len];
+    memcpy(buffer, file_content.c_str(), first_string_len);
+    BytePtr raw_frag1;
+    unsigned int raw_frag1_len = utils::pack(raw_frag1, overall_string_len, first_string_len, buffer);
+
+    memcpy(buffer, file_content.c_str() + first_string_len, sec_string_len);
+
+    BytePtr raw_frag2;
+    unsigned int raw_frag2_len = utils::pack(raw_frag2, sec_string_len, buffer);
+
+    BytePtr msg_frag1;
+    unsigned int msg_frag1_len = utils::pack(msg_frag1, requestID, overall_string_len + 8, 0, constants::SUCCESS,
+                                             raw_frag1_len, raw_frag1.get());
+
+    EXPECT_EQ(constants::MAX_PACKET_SIZE, msg_frag1_len);
+
+    BytePtr msg_frag2;
+    unsigned int msg_frag2_len = utils::pack(msg_frag2, requestID, overall_string_len + 8, 1, raw_frag2_len,
+                                             raw_frag2.get());
+
+    EXPECT_CALL(mock_server, send_packet(_, _, client1))
+            .With(Args<0, 1>(ElementsAreArray(msg_frag1.get(), msg_frag1_len)));
+    EXPECT_CALL(mock_server, send_packet(_, _, client1))
+            .With(Args<0, 1>(ElementsAreArray(msg_frag2.get(), msg_frag2_len)));
+
+    handler.receive_handle_message(mock_server, constants::ATLEAST);
+
+    delete[] buffer;
+}

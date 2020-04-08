@@ -16,6 +16,9 @@ public:
 
     MOCK_METHOD(const sockaddr_storage &, get_client_address, (), (const, override));
 
+    MOCK_METHOD(int, send_packet, (const unsigned char *buf, size_t len, const sockaddr_storage &receiver),
+                (override));
+
     MockUdpServer_linux() : UdpServer_linux(2302) {}
 
     ///https://stackoverflow.com/a/45049665

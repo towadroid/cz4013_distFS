@@ -52,7 +52,7 @@ constexpr char help_text[] = "Distributed File System - server v1.0\n"
                              "This application is the server side application for a distributed file system.\n\n"
 
                              "Usage:\n"
-                             "./server [-am | -al] [-f <FAILURE RATE>] [-p <PORT>] [-v [<LOG LEVEL>]] \n"
+                             "./server [-am | -al] [-f <FAILURE RATE>] [-p <PORT>] [-v [<LOG LEVEL>]] [-s <SEED>] \n"
                              "Note: Uses default values for options which are not set, see below.\n\n"
 
                              "Options:\n"
@@ -63,6 +63,9 @@ constexpr char help_text[] = "Distributed File System - server v1.0\n"
                              "-v [arg], --log-level=[arg]\tSet level of logger, possible values are:\n"
                              "\t\t\t\t\ttrace, debug, info, warn, error, critical, off\n"
                              "\t\t\t\tIf arg not provided, level is set to debug (default: info)\n"
+                             "-s, --seed <arg>\t\tSet seed for random number generator used for simulating send failures.\n"
+                             "\t\t\t\tUse this option to get reproducable deterministic failure behaviour\n"
+                             "\t\t\t\t(default: random)\n"
                              "-h, --help\t\t\tDisplay this help text";
 
 const std::unordered_map<int, std::string> log_level_map = {
@@ -89,6 +92,8 @@ int main(int argc, char **argv) {
     double failure_rate = 0;
     int port_no = 2302;
     int semantic = 0;
+    bool truly_random = true;
+    int seed = 1;
 
     static struct option long_options[] = {
             /* These options set a flag. */
@@ -100,6 +105,7 @@ int main(int argc, char **argv) {
             {"failure-rate", required_argument, nullptr, 'f'},
             {"port",         required_argument, nullptr, 'p'},
             {"log-level",    optional_argument, nullptr, 'v'},
+            {"seed",         required_argument, nullptr, 's'},
             {"help",         no_argument,       nullptr, 'h'},
             {nullptr, 0,                        nullptr, 0}
     };
@@ -141,6 +147,15 @@ int main(int argc, char **argv) {
                 if (!conv_successful) {
                     spdlog::warn("Value you provided: \"{}\". Using default value port_no = 2302 instead", option_arg);
                     port_no = 2302;
+                }
+                break;
+            case 's':
+                truly_random = false;
+                conv_successful = convert_to_number(option_arg, 2, &seed);
+                if (conv_successful) conv_successful = check_range(port_no, 0, 2147483647, "-s", "SEED");
+                if (!conv_successful) {
+                    spdlog::warn("Value you provided: \"{}\". Using seed = 1 instead", option_arg);
+                    seed = 1;
                 }
                 break;
             case 'v':
@@ -191,7 +206,7 @@ int main(int argc, char **argv) {
 
     }
 
-    UdpServer_linux server{port_no, failure_rate};
+    UdpServer_linux server{port_no, failure_rate, (unsigned int) seed, truly_random};
     Handler handler{};
 
     while (true) {

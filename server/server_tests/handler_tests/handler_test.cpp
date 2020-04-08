@@ -60,7 +60,7 @@ using test_rsc::get_client;
 
 TEST(Handler, read) {
     spdlog::set_level(spdlog::level::trace);
-    Handler h{};
+    MockHandler mock_handler;
     MockUdpServer_linux mock_server;
 
     sockaddr_storage client1 = get_client(1);
@@ -74,11 +74,10 @@ TEST(Handler, read) {
     EXPECT_CALL(mock_server, receive_msg_impl)
             .WillOnce(DoAll(
                     SetArrayArgument<0>(inc_msg1.get(), inc_msg1.get() + inc1_len),
-                    Return(inc1_len)
-                      )
-            );
+                    Return(inc1_len)));
     EXPECT_CALL(mock_server, get_client_address).WillRepeatedly(ReturnRef(client1));
-    h.receive_handle_message(mock_server, constants::ATLEAST);
+    EXPECT_CALL(mock_handler, send_complete_message);
+    mock_handler.receive_handle_message(mock_server, constants::ATLEAST);
 }
 
 TEST(Match, easy_expect) {

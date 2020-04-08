@@ -7,13 +7,15 @@
 #include <string>
 #include <stdexcept>
 #include <unistd.h> //for close
+#include <cstdlib> //for random
 #include "spdlog/spdlog.h"
 #include "spdlog/fmt/bin_to_hex.h"
 #include <arpa/inet.h> //for inet_ntop
 #include "utils/utils.hpp"
 #include "UdpServer_linux.hpp"
 
-UdpServer_linux::UdpServer_linux(int portno, double failure_rate) : portno(portno), failure_rate(failure_rate) {
+UdpServer_linux::UdpServer_linux(int portno, double failure_rate, unsigned int seed) :
+        portno(portno), failure_rate(failure_rate) {
     struct addrinfo hints{};
     int status;
 
@@ -56,7 +58,24 @@ UdpServer_linux::UdpServer_linux(int portno, double failure_rate) : portno(portn
 
     if (nullptr == p) throw std::runtime_error("server: failed to bind");
 
+    random_generator = std::mt19937(seed);
+    dist = std::uniform_real_distribution<double>(0.0, 1.0);
 
+}
+
+/** Create server with the option of truly random failure behavior
+ *
+ * @param portno
+ * @param failure_rate
+ * @param seed
+ * @param truly_random If true, ignore seed
+ */
+UdpServer_linux::UdpServer_linux(int portno, double failure_rate, unsigned int seed, bool truly_random) :
+        UdpServer_linux(portno, failure_rate, seed) {
+    if (truly_random) {
+        auto seed2 = (unsigned long) std::chrono::system_clock::now().time_since_epoch().count();
+        random_generator = std::mt19937(seed2);
+    }
 }
 
 UdpServer_linux::~UdpServer_linux() {
@@ -113,21 +132,30 @@ int UdpServer_linux::receive_msg(unsigned char *buf, int sec, int usec) {
 
 }
 
-void UdpServer_linux::send_packet(unsigned char const *buf, size_t len) const {
-    send_packet(buf, len, &client_address);
+void UdpServer_linux::send_packet(unsigned char const *buf, size_t len) {
+    send_packet(buf, len, client_address);
 }
 
 const sockaddr_storage &UdpServer_linux::get_client_address() const {
     return client_address;
 }
 
-void UdpServer_linux::send_packet(const unsigned char *buf, size_t len, const sockaddr_storage *receiver) const {
-    int n = (int) sendto(sockfd, buf, len, MSG_CONFIRM, (const sockaddr *) receiver, sizeof(*receiver));
-    if (n != (int) len) {
-        if (-1 == n) spdlog::error("send_packet");
-        else spdlog::error("Could only send {} bytes out of {}", n, len);
+int UdpServer_linux::send_packet(const unsigned char *buf, size_t len, const sockaddr_storage &receiver) {
+    if (dist(random_generator) > failure_rate) {
+        int n = (int) sendto(sockfd, buf, len, MSG_CONFIRM, (const sockaddr *) &receiver, sizeof(receiver));
+        if (n != (int) len) {
+            if (-1 == n) spdlog::error("send_packet");
+            else spdlog::error("Could only send {} bytes out of {}", n, len);
+        } else {
+            spdlog::trace("Sent packet ({} bytes) to {} with content: {:X}", len, utils::get_in_addr_port_str(receiver),
+                          spdlog::to_hex(buf, buf + len));
+        }
+        return 0;
     } else {
-        spdlog::trace("Sent packet ({} bytes) to {} with content: {:X}", len, utils::get_in_addr_port_str(*receiver),
-                      spdlog::to_hex(buf, buf + len));
+        spdlog::trace("Simulated failure: Packet ({} bytes) to {} with content: {:X} was not sent.",
+                      len, utils::get_in_addr_port_str(receiver), spdlog::to_hex(buf, buf + len));
+        return SIMULATED_FAILURE;
     }
+
 }
+
