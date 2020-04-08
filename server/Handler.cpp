@@ -256,7 +256,7 @@ void Handler::receive_handle_message(UdpServer_linux &server, const int semantic
     BytePtr raw_content = BytePtr(new unsigned char[overall_size]);
     unsigned int fragments_expected = overall_size / MAX_CONTENT_SIZE + 1;
     unsigned int cur_frag_no = 0;
-    size_t cur_len = MAX_PACKET_SIZE;
+    size_t cur_len = MAX_CONTENT_SIZE;
     do {
         if (cur_frag_no + 1 == fragments_expected) cur_len = overall_size % MAX_CONTENT_SIZE;
         memcpy(&raw_content[cur_frag_no * MAX_CONTENT_SIZE], recvd_msg + HEADER_SIZE, cur_len);
