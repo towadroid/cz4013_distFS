@@ -96,26 +96,30 @@ TEST(Match, array) {
 }
 
 // Show how to return by reference work and how to set an array
-/*TEST(Action, ref) {
+TEST(Action, ref) {
     MockUdpServer_linux mock_server;
     sockaddr_storage client1 = get_client(1);
     EXPECT_CALL(mock_server, get_client_address).WillOnce(ReturnRef(client1));
 
     sockaddr_storage tmp = mock_server.get_client_address();
     std::cout << utils::get_in_addr_port_str(tmp) << std::endl;
+}
 
-    BytePtr incoming_mgs1;
-    unsigned int inc1_len = utils::pack(incoming_mgs1, std::string("abcdef"));
+//sho how to mock side effects, here: set the array parameter which is intended as output
+TEST(Action, array_side_effect) {
+    MockUdpServer_linux mock_server;
+
+    BytePtr incoming_msg1;
+    unsigned int inc1_len = utils::pack(incoming_msg1, std::string("abcdef"));
 
     EXPECT_CALL(mock_server, receive_msg_impl)
-            .WillOnce(SetArrayArgument<0>(incoming_mgs1.get(), incoming_mgs1.get() + inc1_len)
-            );
+            .WillOnce(DoAll(
+                    SetArrayArgument<0>(incoming_msg1.get(), incoming_msg1.get() + inc1_len),
+                    Return(inc1_len)));
 
     unsigned char a[256];
     mock_server.receive_msg(a);
-    // This function call leads to a "double free or corrupted memory" when building and running separately
-    //However it works in CLion?!
     std::string res;
     utils::unpack(a, res);
     std::cout << res << std::endl;
-}*/
+}
