@@ -15,5 +15,17 @@ public class ApplicationException extends Exception {
         if (alert_id == Constants.FILE_EMPTY_ID) {
             throw new FileEmptyException();
         }
+        if (alert_id == Constants.FILE_ALREADY_EXISTS_ID) {
+            throw new FileAlreadyExistsException();
+        }
+        if (alert_id == Constants.NOT_A_DIRECTORY_ID) {
+            throw new NotADirectoryException();
+        }
+        if (alert_id == Constants.NOT_A_FILE_ID) {
+            throw new NotAFileException();
+        }
+        if (alert_id == Constants.SERVER_BUSY_ID) {
+            throw new ServerBusyException();
+        }
     }
 }

@@ -100,6 +100,10 @@ public class Constants {
     public static final int BAD_RANGE_ID = 2;
     public static final int FILE_EMPTY_ID = 3;
     public static final int UPDATE_ID = 4;
+    public static final int FILE_ALREADY_EXISTS_ID = 5;
+    public static final int NOT_A_DIRECTORY_ID = 6;
+    public static final int NOT_A_FILE_ID = 7;
+    public static final int SERVER_BUSY_ID = 11;
 
     public static final List<Pair<String, Integer>> NO_SUCH_FILE_PARAMS =
             List.of(new Pair<>("message", STRING_ID));
