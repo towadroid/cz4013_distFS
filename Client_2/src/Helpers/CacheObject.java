@@ -178,7 +178,7 @@ public class CacheObject {
         String[] request_values = {pathname};
         try {
             Map<String, Object> reply = Util.send_and_receive(Constants.EDIT_TIME_ID, request_values, runner);
-            return Integer.parseInt((String)reply.get("time"));
+            return (int) reply.get("time");
         }
         catch (BadPathnameException nsfe) {
             throw new BadPathnameException();
@@ -195,7 +195,7 @@ public class CacheObject {
     }
 
     private int get_end_block(int offset, int byte_count) {
-        return (int) Math.floor(offset+byte_count * 1.0 / Constants.FILE_BLOCK_SIZE);
+        return (int) Math.floor((offset+byte_count) * 1.0 / Constants.FILE_BLOCK_SIZE);
     }
 
     /** Check if the given offset/byte_count combo is certain to be out of range

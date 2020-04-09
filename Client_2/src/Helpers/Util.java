@@ -13,7 +13,7 @@ import java.util.*;
  */
 public class Util {
 
-    /**
+    /** Sending and receiving a message for a specific service
      * @param service_id the service to be performed
      * @param values parameter values
      * @param runner server connection info
@@ -33,23 +33,27 @@ public class Util {
                 break;
             }
             catch (SocketTimeoutException t) {
-                if (Constants.DEBUG) System.out.println("Socket timeout; Resending message ");
+                if (Constants.DEBUG) System.out.println("Socket timeout; Resending message");
                 Util.send_message(request, runner);
             }
             catch (CorruptMessageException c) {
                 if (Constants.DEBUG) System.out.println("Throwing away corrupt message");
             }
         }
-        Map<String, Object> reply = Util.un_marshall(service_id, reply_content);
 
-        if (Constants.AT_MOST_ONCE) {
-            // upon receiving, send acknowledgment
-            List<List<Byte>> ack = Util.marshall(runner.get_request_id(), Constants.ACKNOWLEDGMENT_ID, new String[0]);
-            Util.send_message(ack, runner);
+        try {
+            Map<String, Object> reply = Util.un_marshall(service_id, reply_content);
+            return reply;
+        }
+        finally {
+            if (Constants.AT_MOST_ONCE) {
+                // upon receiving, send acknowledgment
+                List<List<Byte>> ack = Util.marshall(runner.get_request_id(), Constants.ACKNOWLEDGMENT_ID, new String[0]);
+                Util.send_message(ack, runner);
+            }
+            runner.increment_request_id();
         }
 
-        runner.increment_request_id();
-        return reply;
     }
 
     /** For marshalling requests

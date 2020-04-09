@@ -20,12 +20,13 @@ public class Constants {
     public static final int EXIT_ID = 0;
 
     // Basic time settings
-    public static final int TIMEOUT = 1000000;
-    public static final int FRESHNESS_INTERVAL = 60000;
+    public static final int TIMEOUT = 5000;
+    public static final int FRESHNESS_INTERVAL = 10000;
 
     // Basic settings
-    public static final boolean AT_MOST_ONCE = false;
+    public static final boolean AT_MOST_ONCE = true;
     public static final boolean DEBUG = true;
+    public static final double NETWORK_FAILURE_RATE = 0.0;
 
     // Services
     public static final String SERVICE_PROMPT =

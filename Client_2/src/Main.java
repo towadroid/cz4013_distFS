@@ -6,15 +6,12 @@ import java.io.IOException;
 
 public class Main {
 
-
+    // args: [ip address, port number]
     public static void main(String[] args) throws IOException {
-        // Server name: 10.27.135.232
-        // Server port: 2302
         Runner runner = new Runner(args[0], Integer.parseInt(args[1]));
         while (true) {
             System.out.println(Constants.SERVICE_PROMPT);
-            int input = runner.scanner.nextInt();
-            runner.scanner.nextLine();
+            int input = Integer.parseInt(runner.scanner.nextLine());
             if (input == Constants.EXIT_ID) {
                 break;
             }

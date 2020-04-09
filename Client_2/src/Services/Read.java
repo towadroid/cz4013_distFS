@@ -1,6 +1,7 @@
 package Services;
 
 import Exceptions.ApplicationException;
+import Exceptions.BadPathnameException;
 import Helpers.CacheObject;
 import Helpers.Constants;
 import Helpers.Runner;
@@ -41,6 +42,12 @@ public class Read extends  Service {
             String content = cache_object.get_cache(offset, byte_count);
             System.out.println(content);
             System.out.println("Done.");
+        }
+        catch(BadPathnameException bpe) {
+            if (runner.cache.containsKey(pathname)) {
+                runner.cache.remove(pathname);
+            }
+            System.out.println("Error: " + bpe.getMessage() + ".");
         }
         catch(ApplicationException ae) {
             System.out.println("Error: " + ae.getMessage() + ".");

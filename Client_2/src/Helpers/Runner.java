@@ -35,6 +35,7 @@ public class Runner {
     }
 
     /**Send one packet to the server
+     * Simulate packets being lost in transmission
      * @param packet_list packet to be sent
      * @throws IOException from sending packet
      */
@@ -42,7 +43,13 @@ public class Runner {
         byte[] packet = Util.to_primitive(packet_list);
         DatagramPacket request = new DatagramPacket(packet,
                 packet.length, host, server_port);
-        socket.send(request);
+        double random = Math.random();
+        if (random >= Constants.NETWORK_FAILURE_RATE) {
+            socket.send(request);
+        }
+        else if (Constants.DEBUG) {
+            System.out.println("Simulating send failure");
+        }
     }
 
     /**Receive one packet from the server

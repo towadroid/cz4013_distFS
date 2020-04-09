@@ -28,6 +28,11 @@ public class Monitor extends Service {
         long monitor_start = System.currentTimeMillis();
         int monitor_request_id = runner.get_request_id();
 
+        if (monitor_period < 0) {
+            System.out.println("Error: bad monitor period");
+            return;
+        }
+
         try {
             send_and_receive(request_values);
             List<Byte> update_bytes;
