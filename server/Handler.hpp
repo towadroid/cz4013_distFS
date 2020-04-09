@@ -101,7 +101,7 @@ private:
     unpack_header(unsigned char *buf, unsigned int &requestID, unsigned int &overall_size, unsigned int &fragment_no);
 
     //----------------------- server interaction ------------------------
-    virtual void send_complete_message(UdpServer_linux &server, unsigned char *const raw_content_buf, size_t len,
+    virtual bool send_complete_message(UdpServer_linux &server, unsigned char *const raw_content_buf, size_t len,
                                        unsigned int requestID, const sockaddr_storage &receiver);
 
     int receive_specific_packet(UdpServer_linux &server, int semantic, ReceiveSpecifier &rcv_specifier,

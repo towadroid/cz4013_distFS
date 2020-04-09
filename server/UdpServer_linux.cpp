@@ -112,7 +112,7 @@ int UdpServer_linux::receive_msg(unsigned char *buf, int sec, int usec) {
 
     if (-1 == rv) perror("select");
     else if (0 == rv) {
-        spdlog::debug("Timeout occurred! No data!");
+        spdlog::trace("Timeout occurred! No data! (Note that we remove the entry from timeout list lazily)");
         return TIMEOUT;
     } else {
         socklen_t addr_len = sizeof(client_address);

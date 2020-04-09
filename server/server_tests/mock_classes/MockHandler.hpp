@@ -9,9 +9,8 @@
 
 class MockHandler : public Handler {
 public:
-    MOCK_METHOD(void, send_complete_message, (UdpServer_linux & server, unsigned char * raw_content_buf, size_t
-            len,
-                    unsigned int
+    MOCK_METHOD(bool, send_complete_message, (UdpServer_linux & server, unsigned char * raw_content_buf, size_t
+            len, unsigned int
             requestID,
             const sockaddr_storage &receiver), (override));
 
