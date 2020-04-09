@@ -24,9 +24,9 @@ public class Constants {
     public static final int FRESHNESS_INTERVAL = 10000;
 
     // Basic settings
-    public static final boolean AT_MOST_ONCE = true;
+    public static final boolean AT_MOST_ONCE = false;
     public static final boolean DEBUG = true;
-    public static final double NETWORK_FAILURE_RATE = 0.5;
+    public static final double NETWORK_FAILURE_RATE = 0.0;
 
     // Services
     public static final String SERVICE_PROMPT =
@@ -94,6 +94,14 @@ public class Constants {
             List.of();
     public static final List<Pair<String, Integer>> EDIT_TIME_REPLY_PARAMS =
             List.of(new Pair<>("time", INT_ID));
+    public static final List<Pair<String, Integer>> CREATE_REPLY_PARAMS =
+            List.of();
+    public static final List<Pair<String, Integer>> REMOVE_REPLY_PARAMS =
+            List.of();
+
+    // TODO: fix this
+    public static final List<Pair<String, Integer>> LIST_REPLY_PARAMS =
+            List.of();
 
     public static final Map<Integer, List<Pair<String, Integer>>> SUCCESSFUL_STATUS_PARAMS;
     static{
@@ -103,7 +111,9 @@ public class Constants {
                 MONITOR_ID, MONITOR_REPLY_PARAMS,
                 CLEAR_ID, CLEAR_REPLY_PARAMS,
                 TRIM_ID, TRIM_REPLY_PARAMS,
-                EDIT_TIME_ID, EDIT_TIME_REPLY_PARAMS
+                EDIT_TIME_ID, EDIT_TIME_REPLY_PARAMS,
+                CREATE_FILE_ID, CREATE_REPLY_PARAMS,
+                REMOVE_FILE_ID, REMOVE_REPLY_PARAMS
         );
     }
 

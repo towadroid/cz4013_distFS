@@ -77,6 +77,7 @@ public class CacheObject {
         }
         String last_piece = new_content.substring(end_block*Constants.FILE_BLOCK_SIZE);
         if (last_piece.length() != Constants.FILE_BLOCK_SIZE) {
+            System.out.println("final block set to " + end_block);
             final_block = end_block;
         }
         content.put(end_block, last_piece);
@@ -203,6 +204,7 @@ public class CacheObject {
      * @param byte_count number of bytes to read
      * @throws BadRangeException if the combo is indeed out of range
      */
+    // TODO: fix this
     private void check_range(int offset, int byte_count) throws BadRangeException {
         int end_block = get_end_block(offset, byte_count);
         if (offset < 0 ||
@@ -214,4 +216,5 @@ public class CacheObject {
         }
     }
 }
+
 
