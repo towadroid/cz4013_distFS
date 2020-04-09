@@ -26,11 +26,11 @@ public class Constants {
     // Basic settings
     public static final boolean AT_MOST_ONCE = true;
     public static final boolean DEBUG = true;
-    public static final double NETWORK_FAILURE_RATE = 0.0;
+    public static final double NETWORK_FAILURE_RATE = 0.5;
 
     // Services
     public static final String SERVICE_PROMPT =
-            "Please enter: 0 for exit, 1 for read, 2 for write, 3 for monitor, 4 for clear, 5 for trim";
+            "Please enter: 0 for exit, 1 for read, 2 for write, 3 for monitor, 4 for clear, 5 for trim, 8 for create file, 9 for remove file, 10 for list";
     public static final int READ_ID = 1;
     public static final int WRITE_ID = 2;
     public static final int MONITOR_ID = 3;
@@ -38,6 +38,9 @@ public class Constants {
     public static final int TRIM_ID = 5;
     public static final int EDIT_TIME_ID = 6;
     public static final int ACKNOWLEDGMENT_ID = 7;
+    public static final int CREATE_FILE_ID = 8;
+    public static final int REMOVE_FILE_ID = 9;
+    public static final int LIST_ID = 10;
 
     // Parameters for requests
     public static final List<Pair<String, Integer>> READ_REQUEST_PARAMS =
@@ -54,6 +57,12 @@ public class Constants {
             List.of(new Pair<>("pathname", STRING_ID));
     public static final List<Pair<String, Integer>> ACKNOWLEDGE_PARAMS =
             List.of();
+    public static final List<Pair<String, Integer>> CREATE_FILE_REQUEST_PARAMS =
+            List.of(new Pair<>("pathname", STRING_ID));
+    public static final List<Pair<String, Integer>> REMOVE_FILE_REQUEST_PARAMS =
+            List.of(new Pair<>("pathname", STRING_ID));
+    public static final List<Pair<String, Integer>> LIST_REQUEST_PARAMS =
+            List.of(new Pair<>("pathname", STRING_ID));
 
     public static final Map<Integer, List<Pair<String, Integer>>> REQUEST_PARAMS;
     static{
@@ -64,7 +73,10 @@ public class Constants {
                 CLEAR_ID, CLEAR_REQUEST_PARAMS,
                 TRIM_ID, TRIM_REQUEST_PARAMS,
                 EDIT_TIME_ID, EDIT_TIME_REQUEST_PARAMS,
-                ACKNOWLEDGMENT_ID, ACKNOWLEDGE_PARAMS
+                ACKNOWLEDGMENT_ID, ACKNOWLEDGE_PARAMS,
+                CREATE_FILE_ID, CREATE_FILE_REQUEST_PARAMS,
+                REMOVE_FILE_ID, REMOVE_FILE_REQUEST_PARAMS,
+                LIST_ID, LIST_REQUEST_PARAMS
         );
     }
 
@@ -113,6 +125,12 @@ public class Constants {
             List.of(new Pair<>("message", STRING_ID));
     public static final List<Pair<String, Integer>> UPDATE_PARAMS =
             List.of(new Pair<>("pathname", STRING_ID), new Pair<>("content", STRING_ID));
+    public static final List<Pair<String, Integer>> FILE_ALREADY_EXISTS_PARAMS =
+            List.of(new Pair<>("message", STRING_ID));
+    public static final List<Pair<String, Integer>> NOT_A_DIRECTORY_EXAMS =
+            List.of(new Pair<>("message", STRING_ID));
+    public static final List<Pair<String, Integer>> SERVER_BUSY_PARAMS =
+            List.of(new Pair<>("message", STRING_ID));
 
     public static final Map<Integer, List<Pair<String, Integer>>> ALERT_STATUS_PARAMS;
     static{
@@ -120,7 +138,10 @@ public class Constants {
                 NO_SUCH_FILE_ID, NO_SUCH_FILE_PARAMS,
                 BAD_RANGE_ID, BAD_RANGE_PARAMS,
                 FILE_EMPTY_ID, FILE_EMPTY_PARAMS,
-                UPDATE_ID, UPDATE_PARAMS
+                UPDATE_ID, UPDATE_PARAMS,
+                FILE_ALREADY_EXISTS_ID, FILE_ALREADY_EXISTS_PARAMS,
+                NOT_A_DIRECTORY_ID, NOT_A_DIRECTORY_EXAMS,
+                SERVER_BUSY_ID, SERVER_BUSY_PARAMS
         );
     }
 

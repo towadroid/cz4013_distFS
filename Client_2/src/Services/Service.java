@@ -60,6 +60,12 @@ public abstract class Service {
         else if (service_id == Constants.TRIM_ID) {
             return new Trim(r);
         }
+        else if (service_id == Constants.CREATE_FILE_ID) {
+            return new Create(r);
+        }
+        else if (service_id == Constants.REMOVE_FILE_ID) {
+            return new Remove(r);
+        }
         else {
             return null;
         }

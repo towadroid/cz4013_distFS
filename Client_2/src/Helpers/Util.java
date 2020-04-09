@@ -98,8 +98,14 @@ public class Util {
             int receive_request_id = header[0];
             overall_content_size = header[1];
             int fragment_number = header[2];
-            if (fragment_number != current_packet || receive_request_id != check_request_id) {
+            if (fragment_number != current_packet || receive_request_id > check_request_id) {
                 throw new CorruptMessageException();
+            }
+            // acknowledge old replies
+            else if (Constants.AT_MOST_ONCE && receive_request_id < check_request_id) {
+                // send acknowledgment
+                List<List<Byte>> ack = Util.marshall(receive_request_id, Constants.ACKNOWLEDGMENT_ID, new String[0]);
+                Util.send_message(ack, runner);
             }
             if (total_packets == -1) {
                 total_packets = (int) Math.ceil(overall_content_size*1.0/Constants.MAX_PACKET_CONTENT_SIZE);
