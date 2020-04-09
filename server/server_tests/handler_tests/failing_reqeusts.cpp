@@ -8,7 +8,7 @@
  *      request and reply fit in one packet
  */
 
-#include "test_resoures.hpp"
+#include "../test_resoures.hpp"
 
 TEST(failing_request, read_offset_count_exceed) {
     MockHandler mock_handler;

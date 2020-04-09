@@ -20,6 +20,7 @@
 #include <chrono>
 #include "../constants.hpp"
 #include <filesystem>
+#include <vector>
 
 using std::filesystem::path;
 
@@ -27,6 +28,12 @@ namespace utils {
     bool is_expected_size_and_format();
 
     //-------------- file operations ----------------------
+    void exists_is_file(const path &path);
+
+    void exists_is_dir(const path &path);
+
+    void exists_is_file_non_empty(const path &path);
+
     std::string read_file_to_string(const path &path);
 
     std::string read_file_to_string_cached(const path &path, int offset, int count);
@@ -40,6 +47,12 @@ namespace utils {
     int get_last_mod_time(const path &path);
 
     bool file_exists(const path &path);
+
+    void create_file(const path &path);
+
+    void remove_file(const path &path);
+
+    std::vector<path> get_dir_content(const path &path);
 
     //-------------- internet address -------------------
     int get_in_port(sockaddr_storage const *sock_storage);

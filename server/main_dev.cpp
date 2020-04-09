@@ -12,6 +12,9 @@
 #include "spdlog/spdlog.h"
 #include "spdlog/logger.h"
 #include "HelperClasses/HelperClasses.hpp"
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 #include <chrono>
 #include "HelperClasses/HelperClasses.hpp"
@@ -89,4 +92,15 @@ int main() {
     buffer[0] = buffer[0];
     Handler h{};
     std::unordered_map<sockaddr_storage, int, SockaddrStor_Hasher, SockaddrStor_Equal> um{};
+
+    //utils::create_file(constants::FILE_DIR_PATH + "/folder/bla2");
+    //utils::create_file(constants::FILE_DIR_PATH + "/folder/bla");
+    //utils::remove_file(constants::FILE_DIR_PATH+"folder/bla2");
+    std::vector<fs::path> content = utils::get_dir_content(constants::FILE_DIR_PATH);
+    for (auto &it : content) {
+        std::cout << fs::is_directory(it) << " " << it.filename().string() << std::endl;
+    }
+
+    cout << fs::relative(constants::FILE_DIR_PATH + "folder", constants::FILE_DIR_PATH).string();
+
 }

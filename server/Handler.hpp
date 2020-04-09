@@ -73,6 +73,13 @@ private:
 
     void resend_timeouted_messages(UdpServer_linux &server);
 
+    void service_create_file(unsigned char *message, BytePtr &raw_result, unsigned int &result_length);
+
+    void service_remove_file(unsigned char *message, BytePtr &raw_result, unsigned int &result_length,
+                             std::string &path_string);
+
+    void service_list_dir_content(unsigned char *message, BytePtr &raw_result, unsigned int &result_length);
+
     //------------------------ stored_messages interaction ------------
     void store_message(const sockaddr_storage &client_address, unsigned int requestID, BytePtr message, size_t len);
 

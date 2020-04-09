@@ -8,7 +8,7 @@
  *      all operations can be executed successfully (always status=SUCCESS)
  */
 
-#include "test_resoures.hpp"
+#include "../test_resoures.hpp"
 #include <chrono>
 #include <thread>
 

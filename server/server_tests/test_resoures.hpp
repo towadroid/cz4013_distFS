@@ -8,14 +8,12 @@
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 #include <string>
-#include "../mock_classes/MockHandler.hpp"
-#include "../mock_classes/MockUdpServer_linux.hpp"
-#include "../../utils/packing.hpp"
+#include "mock_classes/MockHandler.hpp"
+#include "mock_classes/MockUdpServer_linux.hpp"
+#include "../utils/packing.hpp"
 
 namespace test_rsc {
     sockaddr_storage get_client(unsigned int i);
-
-    void prepare_file(const std::string &file_path = std::string{"test_file"});
 
     const std::string test_file_content{
             "0123456789\n"
@@ -40,6 +38,10 @@ namespace test_rsc {
             "123456789\n"
             "123456789\n"
     };
+
+    void prepare_file(const std::string &file_path = std::string{"test_file"},
+                      const std::string &to_insert = test_file_content);
+
 }
 
 namespace testing::internal {

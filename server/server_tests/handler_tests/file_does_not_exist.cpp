@@ -7,7 +7,7 @@
  *      request and reply fit in one packet
  */
 
-#include "test_resoures.hpp"
+#include "../test_resoures.hpp"
 
 TEST(Handler_file_does_not_exist, read) {
     MockHandler mock_handler;

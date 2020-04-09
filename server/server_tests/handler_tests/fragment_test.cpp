@@ -7,7 +7,7 @@
  *      all operations can be executed successfully (always status=SUCCESS)
  */
 
-#include "test_resoures.hpp"
+#include "../test_resoures.hpp"
 
 TEST(fragments, two_following) {
     MockHandler mock_handler;

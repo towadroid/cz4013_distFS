@@ -57,8 +57,23 @@ utils::internals2::calculate_bounds(int &lower, int &upper, const int offset, co
     upper = end - end % chunk_size + chunk_size;
 }
 
+void utils::exists_is_file(const path &path) {
+    if (!std::filesystem::exists(path)) throw File_does_not_exist("File does not exist", path);
+    if (!fs::is_regular_file(path)) throw Is_not_file("Is not file", path);
+}
+
+void utils::exists_is_dir(const path &path) {
+    if (!std::filesystem::exists(path)) throw File_does_not_exist("File does not exist", path);
+    if (!fs::is_directory(path)) throw Is_not_directory("Is not dir", path);
+}
+
+void utils::exists_is_file_non_empty(const path &path) {
+    exists_is_file(path);
+    if (fs::is_empty(path)) throw File_already_empty("File already empty", path.string());
+}
+
 std::string utils::read_file_to_string_cached(const path &path, int offset, int count) {
-    if (!std::filesystem::exists(path)) throw File_does_not_exist("Could not read from file", path);
+    exists_is_file(path);
     std::ifstream in(path);
     if (!in.is_open()) throw std::runtime_error("Could not open file.");
     int start, end;
@@ -87,7 +102,7 @@ std::string utils::read_file_to_string_cached(const path &path, int offset, int 
  * @return 0 if successful
  */
 int utils::insert_to_file(const path &path, std::string to_insert, unsigned int offset) {
-    if (!std::filesystem::exists(path)) throw File_does_not_exist("Could not insert into file", path);
+    exists_is_file(path);
     std::fstream myfile(path); // std::ios::in | std::ios::out by default
     if (!myfile.is_open()) throw std::runtime_error("Could not open file.");
     //save existing old content after offset first
@@ -104,9 +119,7 @@ int utils::insert_to_file(const path &path, std::string to_insert, unsigned int 
 }
 
 void utils::remove_content_from_file(const path &path) {
-    std::string content = read_file_to_string(path);
-    if (content.length() == 0)
-        throw File_already_empty("Tried to remove content from already empty file", path.string());
+    exists_is_file_non_empty(path);
 
     std::ofstream ofs;
     ofs.open(path, std::ofstream::out |
@@ -114,12 +127,10 @@ void utils::remove_content_from_file(const path &path) {
 }
 
 void utils::remove_last_char(const path &path) {
+    exists_is_file_non_empty(path);
     std::string content = read_file_to_string(path);
-    if (content.length() == 0)
-        throw File_already_empty("Tried to remove last char from already empty file", path.string());
 
     content.pop_back();
-    if (!std::filesystem::exists(path)) throw File_does_not_exist("Could not insert into file", path);
     std::ofstream myfile;
     myfile.open(path, std::ios::out | std::ios::trunc);
     if (!myfile.is_open()) throw std::runtime_error("Could not open file.");
@@ -129,6 +140,26 @@ void utils::remove_last_char(const path &path) {
 
 bool utils::file_exists(const path &path) {
     return std::filesystem::exists(path);
+}
+
+void utils::create_file(const path &path) {
+    if (fs::exists(path)) throw File_already_exists("Could not create file", path);
+    fs::create_directories(path.parent_path());
+    std::ofstream outfile(path);
+}
+
+void utils::remove_file(const path &path) {
+    bool successful_remove = fs::remove(path);
+    if (!successful_remove)
+        throw File_does_not_exist("Could not remove file", path);
+}
+
+std::vector<fs::path> utils::get_dir_content(const path &path) {
+    exists_is_dir(path);
+    std::vector<fs::path> result;
+    for (auto &p: fs::directory_iterator(path))
+        result.push_back(p.path());
+    return result;
 }
 
 /** Get sockaddr, IPv4 or IPv6:

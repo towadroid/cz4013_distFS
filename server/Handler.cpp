@@ -12,6 +12,7 @@
 #include "spdlog/fmt/bin_to_hex.h"
 
 using constants::Service_type;
+namespace fs = std::filesystem;
 
 /** Calls the function executing the service associated with the service type
  *
@@ -21,6 +22,7 @@ void Handler::service(Service_type service_type, UdpServer_linux &server, unsign
                       BytePtr &raw_reply, unsigned int &raw_reply_length, const sockaddr_storage &client_address,
                       unsigned int requestID) {
     unsigned char *raw_content_wo_servno = complete_raw_content + 4;
+    std::string path_string{""};
     switch (service_type) {
         case Service_type::read: {
             service_read(raw_content_wo_servno, raw_reply, raw_reply_length);
@@ -31,21 +33,15 @@ void Handler::service(Service_type service_type, UdpServer_linux &server, unsign
             break;
         }
         case Service_type::insert: {
-            std::string path_string;
             service_insert(raw_content_wo_servno, raw_reply, raw_reply_length, path_string);
-            if (!path_string.empty()) notify_registered_clients(path_string, server);
             break;
         }
         case Service_type::remove_content: {
-            std::string path_string;
             service_remove_all_content(raw_content_wo_servno, raw_reply, raw_reply_length, path_string);
-            if (!path_string.empty()) notify_registered_clients(path_string, server);
             break;
         }
         case Service_type::remove_last_char: {
-            std::string path_string;
             service_remove_last_char(raw_content_wo_servno, raw_reply, raw_reply_length, path_string);
-            if (!path_string.empty()) notify_registered_clients(path_string, server);
             break;
         }
         case Service_type::file_mod_time: {
@@ -57,12 +53,23 @@ void Handler::service(Service_type service_type, UdpServer_linux &server, unsign
                     "Tried to invoke ack_recvd_reply service, this should not happen because acks are processed earlier!");
             break;
         }
-
+        case Service_type::create_file: {
+            service_create_file(raw_content_wo_servno, raw_reply, raw_reply_length);
+            break;
+        }
+        case Service_type::remove_file: {
+            service_remove_file(raw_content_wo_servno, raw_reply, raw_reply_length, path_string);
+            break;
+        }
+        case Service_type::list_dir: {
+            service_list_dir_content(raw_content_wo_servno, raw_reply, raw_reply_length);
+            break;
+        }
         default: {
             spdlog::error("Service could not be identified!");
         }
-
     }
+    if (!path_string.empty()) notify_registered_clients(path_string, server);
 }
 
 void Handler::service_read(unsigned char *message, BytePtr &raw_result, unsigned int &result_length) {
@@ -78,6 +85,8 @@ void Handler::service_read(unsigned char *message, BytePtr &raw_result, unsigned
         result_length = utils::pack(raw_result, constants::FILE_DOES_NOT_EXIST);
     } catch (const Offset_out_of_range &e) {
         result_length = utils::pack(raw_result, constants::OFFSET_OUT_OF_BOUNDS);
+    } catch (const Is_not_file &e) {
+        result_length = utils::pack(raw_result, constants::IS_NOT_FILE);
     }
 }
 
@@ -105,6 +114,9 @@ Handler::service_insert(unsigned char *message, BytePtr &raw_result, unsigned in
     } catch (const Offset_out_of_range &e) {
         result_length = utils::pack(raw_result, constants::OFFSET_OUT_OF_BOUNDS);
         path_string = "";
+    } catch (const Is_not_file &e) {
+        result_length = utils::pack(raw_result, constants::IS_NOT_FILE);
+        path_string = "";
     }
 }
 
@@ -114,11 +126,16 @@ Handler::service_register_client(unsigned char *message, BytePtr &raw_result, un
     std::string path_string;
     int mon_interval;
     utils::unpack(message, path_string, mon_interval);
-    if (!utils::file_exists(constants::FILE_DIR_PATH + path_string))
-        result_length = utils::pack(raw_result, constants::FILE_DOES_NOT_EXIST);
-    else {
-        registered_clients[path_string].push_back(MonitoringClient{client, mon_interval, requestID});
+    try {
+        path path = constants::FILE_DIR_PATH + path_string;
+        utils::exists_is_file(path);
+        std::string relative_path = fs::relative(path, constants::FILE_DIR_PATH).string();
+        registered_clients[relative_path].push_back(MonitoringClient{client, mon_interval, requestID}); //TODO
         result_length = utils::pack(raw_result, constants::SUCCESS);
+    } catch (const File_does_not_exist &e) {
+        result_length = utils::pack(raw_result, constants::FILE_DOES_NOT_EXIST);
+    } catch (const Is_not_file &e) {
+        result_length = utils::pack(raw_result, constants::IS_NOT_FILE);
     }
 }
 
@@ -141,6 +158,9 @@ Handler::service_remove_all_content(unsigned char *message, BytePtr &raw_result,
         path_string = "";
     } catch (const File_already_empty &e) {
         result_length = utils::pack(raw_result, constants::SUCCESS);
+        path_string = "";
+    } catch (const Is_not_file &e) {
+        result_length = utils::pack(raw_result, constants::IS_NOT_FILE);
         path_string = "";
     }
 }
@@ -165,6 +185,9 @@ Handler::service_remove_last_char(unsigned char *message, BytePtr &raw_result, u
     } catch (const File_already_empty &e) {
         result_length = utils::pack(raw_result, constants::FILE_ALREADY_EMPTY);
         path_string = "";
+    } catch (const Is_not_file &e) {
+        result_length = utils::pack(raw_result, constants::IS_NOT_FILE);
+        path_string = "";
     }
 }
 
@@ -176,25 +199,86 @@ void Handler::service_last_mod_time(unsigned char *message, BytePtr &raw_result,
         result_length = utils::pack(raw_result, constants::SUCCESS, last_m_time);
     } catch (const File_does_not_exist &e) {
         result_length = utils::pack(raw_result, constants::FILE_DOES_NOT_EXIST);
+    } catch (const Is_not_file &e) {
+        result_length = utils::pack(raw_result, constants::IS_NOT_FILE);
     }
 
 }
 
+void Handler::service_create_file(unsigned char *message, BytePtr &raw_result, unsigned int &result_length) {
+    std::string path_string;
+    utils::unpack(message, path_string);
+    try {
+        utils::create_file(constants::FILE_DIR_PATH + path_string);
+        result_length = utils::pack(raw_result, constants::SUCCESS);
+    } catch (const File_already_exists &e) {
+        result_length = utils::pack(raw_result, constants::FILE_ALREADY_EXISTS);
+    }
+}
+
+void Handler::service_remove_file(unsigned char *message, BytePtr &raw_result, unsigned int &result_length,
+                                  std::string &path_string) {
+    utils::unpack(message, path_string);
+    try {
+        utils::remove_file(constants::FILE_DIR_PATH + path_string);
+        result_length = utils::pack(raw_result, constants::SUCCESS);
+    } catch (const File_does_not_exist &e) {
+        result_length = utils::pack(raw_result, constants::FILE_DOES_NOT_EXIST);
+        path_string = "";
+    }
+}
+
+void Handler::service_list_dir_content(unsigned char *message, BytePtr &raw_result, unsigned int &result_length) {
+    std::string path_string;
+    utils::unpack(message, path_string);
+    try {
+        std::vector<std::filesystem::path> content = utils::get_dir_content(constants::FILE_DIR_PATH);
+        result_length = utils::pack(raw_result, (unsigned int) content.size());
+        for (auto &it : content) {
+            if (std::filesystem::is_directory(it))
+                result_length = utils::pack(raw_result, result_length, raw_result.get(), constants::IS_DIR,
+                                            it.filename().string());
+            else if (std::filesystem::is_regular_file(it))
+                result_length = utils::pack(raw_result, result_length, raw_result.get(), constants::IS_FILE,
+                                            it.filename().string());
+            else
+                throw std::runtime_error("Unknown file type!");
+        }
+    } catch (const File_does_not_exist &e) {
+        result_length = utils::pack(raw_result, constants::FILE_DOES_NOT_EXIST);
+        path_string = "";
+    } catch (const Is_not_directory &e) {
+        result_length = utils::pack(raw_result, constants::IS_NOT_DIRECTORY);
+        path_string = "";
+    }
+}
+
+
 void Handler::notify_registered_clients(const std::string &filename, UdpServer_linux &server) {
     std::vector<MonitoringClient> file_reg_clients;
-    try { file_reg_clients = registered_clients.at(filename); }
+    fs::path path{constants::FILE_DIR_PATH + filename};
+    std::string relative_path = fs::relative(path, constants::FILE_DIR_PATH).string();
+    try { file_reg_clients = registered_clients.at(relative_path); }
     catch (const std::out_of_range &oor) {} // there is no entry for this filename => nothing to doo
 
     for (auto it = file_reg_clients.begin(); it != file_reg_clients.end();) {
         if (it->expired()) it = file_reg_clients.erase(it);
         else {
-            std::string file_content = utils::read_file_to_string(path{constants::FILE_DIR_PATH + filename});
             BytePtr raw_content;
-            unsigned int raw_length = utils::pack(raw_content, constants::FILE_WAS_MODIFIED, filename, file_content);
-            send_complete_message(server, raw_content.get(), raw_length, it->getRequestId(),
-                                  it->getAddress());
-            spdlog::info("Sent notification to {}, that file {} has changed",
-                         utils::get_in_addr_port_str(it->getAddress()), filename);
+            unsigned int raw_length;
+            if (!utils::file_exists(path)) {
+                raw_length = utils::pack(raw_content, constants::FILE_DOES_NOT_EXIST, relative_path);
+                spdlog::info("Sent notification to {}, that file '{}' was deleted",
+                             utils::get_in_addr_port_str(it->getAddress()), filename);
+            } else {
+                std::string file_content = utils::read_file_to_string(path);
+                raw_length = utils::pack(raw_content, constants::FILE_WAS_MODIFIED, relative_path, file_content);
+                spdlog::info("Sent notification to {}, that file '{}' has changed",
+                             utils::get_in_addr_port_str(it->getAddress()), filename);
+            }
+
+            send_complete_message(server, raw_content.get(), raw_length, it->getRequestId(), it->getAddress());
+
             ++it;
         }
     }

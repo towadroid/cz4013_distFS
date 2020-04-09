@@ -4,7 +4,7 @@
 
 #include <arpa/inet.h>
 #include "test_resoures.hpp"
-#include "../../HelperClasses/HelperClasses.hpp"
+#include "../HelperClasses/HelperClasses.hpp"
 #include <string>
 
 sockaddr_storage test_rsc::get_client(unsigned int i) {
@@ -17,14 +17,17 @@ sockaddr_storage test_rsc::get_client(unsigned int i) {
     return client;
 }
 
-void test_rsc::prepare_file(const std::string &file_path) {
+void test_rsc::prepare_file(const std::string &file_path, const std::string &to_insert) {
     path test_file_path{constants::FILE_DIR_PATH + file_path};
     try {
+        utils::create_file(test_file_path);
+    } catch (const File_already_exists &err) {}
+    try {
         utils::remove_content_from_file(test_file_path);
-    } catch (const File_already_empty &err) {
+    } catch (const File_already_empty &err) {}
 
-    }
-    utils::insert_to_file(test_file_path, test_file_content, 0);
+    utils::insert_to_file(test_file_path, to_insert,
+                          0);
 }
 
 namespace testing::internal {

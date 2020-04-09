@@ -70,6 +70,48 @@ public:
     }
 };
 
+class File_already_exists : std::runtime_error {
+protected:
+    std::string path;
+public:
+    File_already_exists(const std::string &arg, std::string path) : runtime_error(arg), path(std::move(path)) {};
+
+    [[nodiscard]] char const *what() const noexcept override {
+        std::string message{"The file at"};
+        message.append(path);
+        message.append("already exists!");
+        return message.c_str();
+    }
+};
+
+class Is_not_directory : std::runtime_error {
+protected:
+    std::string path;
+public:
+    Is_not_directory(const std::string &arg, std::string path) : runtime_error(arg), path(std::move(path)) {};
+
+    [[nodiscard]] char const *what() const noexcept override {
+        std::string message{"The path"};
+        message.append(path);
+        message.append("is not a directory!");
+        return message.c_str();
+    }
+};
+
+class Is_not_file : std::runtime_error {
+protected:
+    std::string path;
+public:
+    Is_not_file(const std::string &arg, std::string path) : runtime_error(arg), path(std::move(path)) {};
+
+    [[nodiscard]] char const *what() const noexcept override {
+        std::string message{"The path at"};
+        message.append(path);
+        message.append("is not a file!");
+        return message.c_str();
+    }
+};
+
 class Offset_out_of_range : std::out_of_range {
 protected:
     int max_range;

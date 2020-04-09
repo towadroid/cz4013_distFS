@@ -10,7 +10,7 @@
 #include "../../UdpServer_linux.hpp"
 #include "../../utils/packing.hpp"
 #include "spdlog/spdlog.h"
-#include "test_resoures.hpp"
+#include "../test_resoures.hpp"
 
 TEST(Handler, service_insert) {
     Handler h{};
@@ -61,11 +61,12 @@ using test_rsc::get_client;
 TEST(Handler, read) {
     MockHandler mock_handler;
     MockUdpServer_linux mock_server;
+    prepare_file();
 
     sockaddr_storage client1 = get_client(1);
 
     BytePtr raw1;
-    unsigned int raw1_len = utils::pack(raw1, 1, std::string("file1"), 0, 5);
+    unsigned int raw1_len = utils::pack(raw1, 1, std::string("test_file"), 0, 5);
 
     BytePtr inc_msg1;
     unsigned int inc1_len = utils::pack(inc_msg1, 0, raw1_len, 0, raw1_len, raw1.get());

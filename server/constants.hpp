@@ -36,7 +36,13 @@ namespace constants {
     constexpr int OFFSET_OUT_OF_BOUNDS = 2;
     constexpr int FILE_ALREADY_EMPTY = 3;
     constexpr int FILE_WAS_MODIFIED = 4;
+    constexpr int FILE_ALREADY_EXISTS = 5;
     constexpr int SERVER_BUSY = 11;
+    constexpr int IS_NOT_DIRECTORY = 6;
+    constexpr int IS_NOT_FILE = 7;
+
+    constexpr int IS_FILE = 0;
+    constexpr int IS_DIR = 1;
 
     //----------- service constants -----------------------------
     enum class Service_type : int {
@@ -47,16 +53,22 @@ namespace constants {
         remove_last_char,
         file_mod_time,
         ack_recvd_reply,
+        create_file,
+        remove_file,
+        list_dir
     };
 
     const std::unordered_map<int, Service_type> service_codes = {
-            {1, Service_type::read},
-            {2, Service_type::insert},
-            {3, Service_type::register_client},
-            {4, Service_type::remove_content},
-            {5, Service_type::remove_last_char},
-            {6, Service_type::file_mod_time},
-            {7, Service_type::ack_recvd_reply}
+            {1,  Service_type::read},
+            {2,  Service_type::insert},
+            {3,  Service_type::register_client},
+            {4,  Service_type::remove_content},
+            {5,  Service_type::remove_last_char},
+            {6,  Service_type::file_mod_time},
+            {7,  Service_type::ack_recvd_reply},
+            {8,  Service_type::create_file},
+            {9,  Service_type::remove_file},
+            {10, Service_type::list_dir},
     };
 
     const std::string IEEE754_NONCOMPLIANCE("Not IEC559/IEEE754 compliant, cannot (un-)marshal data");

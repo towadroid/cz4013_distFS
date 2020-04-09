@@ -2,7 +2,7 @@
 // Created by towa-ubuntu on 08.04.20.
 //
 
-#include "test_resoures.hpp"
+#include "../test_resoures.hpp"
 
 TEST(send_failure, deterministic) {
     UdpServer_linux server(2302, 0.5, 1);
