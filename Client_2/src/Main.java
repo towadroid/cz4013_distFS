@@ -6,9 +6,9 @@ import java.io.IOException;
 
 public class Main {
 
-    // args: [ip address, port number]
+    // args: [ip address, port number, freshness interval]
     public static void main(String[] args) throws IOException {
-        Runner runner = new Runner(args[0], Integer.parseInt(args[1]));
+        Runner runner = new Runner(args[0], Integer.parseInt(args[1]), Integer.parseInt(args[2]));
         while (true) {
             System.out.println(Constants.SERVICE_PROMPT);
             int input = Integer.parseInt(runner.scanner.nextLine());

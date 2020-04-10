@@ -17,6 +17,7 @@ public class Runner {
     public InetAddress host;
     public DatagramSocket socket;
     public HashMap<String, CacheObject> cache;
+    public int freshness_interval;
     private int request_id = 0;
     private int server_port;
 
@@ -26,12 +27,13 @@ public class Runner {
      * @throws UnknownHostException
      * @throws SocketException
      */
-    public Runner(String s_name, int s_port) throws UnknownHostException, SocketException {
+    public Runner(String s_name, int s_port, int f_interval) throws UnknownHostException, SocketException {
         socket = new DatagramSocket();
         scanner = new Scanner(System.in);
         server_port = s_port;
         host = InetAddress.getByName(s_name);
         cache = new HashMap<>();
+        freshness_interval = f_interval;
     }
 
     /**Send one packet to the server

@@ -96,7 +96,7 @@ public class CacheObject {
      * @throws BadRangeException if the given offset/byte_count combo is certain to be out of range
      */
     public boolean must_read_server(int offset, int byte_count, Runner runner) throws IOException, BadPathnameException, BadRangeException {
-        boolean must = !cached(offset, byte_count) || (!local_fresh() && !server_fresh(runner));
+        boolean must = !cached(offset, byte_count) || (!local_fresh(runner.freshness_interval) && !server_fresh(runner));
         if (Constants.DEBUG) {
             if (must) {
                 System.out.println("Must read from server");
@@ -131,8 +131,8 @@ public class CacheObject {
     /** Whether the freshness interval has expired or not
      * @return expired?
      */
-    private boolean local_fresh() {
-        boolean fresh = System.currentTimeMillis() - server_checkin_time < Constants.FRESHNESS_INTERVAL;
+    private boolean local_fresh(int freshness_interval) {
+        boolean fresh = System.currentTimeMillis() - server_checkin_time < freshness_interval;
         if (Constants.DEBUG) {
             if (fresh) {
                 System.out.println("Checking freshness interval: fresh");
