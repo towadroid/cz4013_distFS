@@ -21,8 +21,7 @@ public class Main {
             }
             System.out.println();
         }
-        // TODO: acknowledge old replies on close
-        runner.socket.close();
+        runner.close();
     }
 
 }

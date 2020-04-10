@@ -1,6 +1,6 @@
 package Helpers;
 
-import Services.Service;
+import Exceptions.CorruptMessageException;
 
 import java.io.IOException;
 import java.net.*;
@@ -61,6 +61,29 @@ public class Runner {
         DatagramPacket reply = new DatagramPacket(buffer, buffer.length);
         socket.receive(reply);
         return reply.getData();
+    }
+
+    /** acknowledge any lingering old replies (if we are using at most once semantics)
+     * @throws IOException from receiving packet
+     */
+    public void close() throws IOException {
+        if (Constants.AT_MOST_ONCE) {
+            socket.setSoTimeout(Constants.TIMEOUT);
+            if (Constants.DEBUG) System.out.println("Begin acknowledging old replies");
+            while(true) {
+                try {
+                    Util.receive_message(request_id, this);
+                }
+                catch (SocketTimeoutException t) {
+                    if (Constants.DEBUG) System.out.println("Socket timeout; Done with cleanup");
+                    break;
+                }
+                catch (CorruptMessageException c) {
+                    if (Constants.DEBUG) System.out.println("Throwing away corrupt message");
+                }
+            }
+        }
+        socket.close();
     }
 
     public void increment_request_id() {

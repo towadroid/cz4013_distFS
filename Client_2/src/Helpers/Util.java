@@ -101,7 +101,7 @@ public class Util {
             if (fragment_number != current_packet || receive_request_id > check_request_id) {
                 throw new CorruptMessageException();
             }
-            // acknowledge old replies
+            // blindly acknowledge old replies
             else if (Constants.AT_MOST_ONCE && receive_request_id < check_request_id) {
                 // send acknowledgment
                 List<List<Byte>> ack = Util.marshall(receive_request_id, Constants.ACKNOWLEDGMENT_ID, new String[0]);
