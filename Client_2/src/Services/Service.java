@@ -24,7 +24,8 @@ public abstract class Service {
     }
 
     /** Perform the service
-     * This basic method (shared by Write, Trim, and Clear) can be overridden for more involved services (Monitor, Write)
+     * This basic method (shared by Write, Create, Remove, Trim, and Clear)
+     * can be overridden for more involved services (Monitor, Read, Edit Time, List)
      * @throws IOException send/receive message
      */
     public void act() throws IOException {

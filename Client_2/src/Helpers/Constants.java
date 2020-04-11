@@ -95,10 +95,8 @@ public class Constants {
             List.of();
     public static final List<Pair<String, Integer>> REMOVE_REPLY_PARAMS =
             List.of();
-
-    // TODO: fix this
     public static final List<Pair<String, Integer>> LIST_REPLY_PARAMS =
-            List.of();
+            List.of(new Pair<>("repeat", INT_ID), new Pair<>("type", INT_ID), new Pair<>("name", STRING_ID));
 
     public static final Map<Integer, List<Pair<String, Integer>>> SUCCESSFUL_STATUS_PARAMS;
     static{
@@ -110,7 +108,8 @@ public class Constants {
                 TRIM_ID, TRIM_REPLY_PARAMS,
                 EDIT_TIME_ID, EDIT_TIME_REPLY_PARAMS,
                 CREATE_FILE_ID, CREATE_REPLY_PARAMS,
-                REMOVE_FILE_ID, REMOVE_REPLY_PARAMS
+                REMOVE_FILE_ID, REMOVE_REPLY_PARAMS,
+                LIST_ID, LIST_REPLY_PARAMS
         );
     }
 

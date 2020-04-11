@@ -15,7 +15,6 @@ public class EditTime extends Service {
     }
 
     /** Perform the service
-     * This basic method (shared by Write, Trim, and Clear) can be overridden for more involved services (Monitor, Write)
      * @throws IOException send/receive message
      */
     @Override

@@ -129,17 +129,19 @@ public class Util {
      * @throws ApplicationException BadPathnameException, BadRangeException, FilEmptyException
      */
     public static Map<String, Object> un_marshall(int service_id, List<Byte> raw_content) throws ApplicationException {
+        int counter = 0;
         Map<String, Object> message = new HashMap<>();
-        int status_id = bytes_to_int(raw_content.subList(0, 4));
-        message.put("status_id", status_id);
-        List<Pair<String, Integer>> params;
 
+        int status_id = bytes_to_int(raw_content.subList(counter, counter + Constants.INT_SIZE));
+        message.put("status_id", status_id);
+        counter += Constants.INT_SIZE;
+
+        List<Pair<String, Integer>> params;
         // if the status is "successful", then the parameters of the message depend on the SERVICE ID given
         // i.e. a successful read vs. successful write vs. successful monitor have different parameters
         if (status_id == Constants.SUCCESSFUL_STATUS_ID) {
             params = Constants.get_successful_reply_params(service_id);
         }
-
         // if the status is not "successful", then the parameters of the message depend on the STATUS ID given
         // i.e. one of the error messages or an update notification
         // a status that is not "successful" is called an "alert"
@@ -149,17 +151,33 @@ public class Util {
             params = Constants.get_alert_reply_params(alert_id);
         }
 
-        // match raw_content with params
-        int counter = 4;
-        for (Pair<String, Integer> param : params) {
-            int param_type = param.getValue();
-            int i = bytes_to_int(raw_content.subList(counter, counter + Constants.INT_SIZE));
+        // hacky way of dealing with variable number of repetitions of parameters
+        int repeat = 1;
+        if (params.get(0).getKey().equals("repeat")) {
+            repeat = bytes_to_int(raw_content.subList(counter, counter + Constants.INT_SIZE));
             counter += Constants.INT_SIZE;
-            message.put(param.getKey(), i);
-            if (param_type == Constants.STRING_ID) {
-                String s = new String(to_primitive(raw_content.subList(counter, counter + i)));
-                counter += i;
-                message.put(param.getKey(), s);
+            // remove the "repeat" parameter
+            params = params.subList(1, params.size());
+        }
+        message.put("repeat", repeat);
+
+        // match raw_content with params
+        for(int r = 0; r < repeat; r++) {
+            for (Pair<String, Integer> param : params) {
+                String param_name = param.getKey();
+                if (repeat > 1) {
+                    param_name += " ";
+                    param_name += r;
+                }
+                int param_type = param.getValue();
+                int i = bytes_to_int(raw_content.subList(counter, counter + Constants.INT_SIZE));
+                counter += Constants.INT_SIZE;
+                message.put(param_name, i);
+                if (param_type == Constants.STRING_ID) {
+                    String s = new String(to_primitive(raw_content.subList(counter, counter + i)));
+                    counter += i;
+                    message.put(param_name, s);
+                }
             }
         }
 
