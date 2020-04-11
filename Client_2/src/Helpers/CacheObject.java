@@ -77,7 +77,7 @@ public class CacheObject {
         }
         String last_piece = new_content.substring(end_block*Constants.FILE_BLOCK_SIZE);
         if (last_piece.length() != Constants.FILE_BLOCK_SIZE) {
-            System.out.println("final block set to " + end_block);
+            if (Constants.DEBUG) System.out.println("Final block set to " + end_block);
             final_block = end_block;
         }
         content.put(end_block, last_piece);
@@ -132,13 +132,16 @@ public class CacheObject {
      * @return expired?
      */
     private boolean local_fresh(int freshness_interval) {
-        boolean fresh = System.currentTimeMillis() - server_checkin_time < freshness_interval;
+        long current_time = System.currentTimeMillis();
+        boolean fresh =  current_time - server_checkin_time < freshness_interval;
+        if (Constants.DEBUG) System.out.println("Checking freshness locally: it is currently " + current_time +
+                " and we last checked the server at time " + server_checkin_time);
         if (Constants.DEBUG) {
             if (fresh) {
-                System.out.println("Checking freshness interval: fresh");
+                System.out.println("-> fresh locally");
             }
             else {
-                System.out.println("Checking freshness interval: NOT fresh");
+                System.out.println("-> not fresh locally");
             }
         }
         return fresh;
@@ -153,12 +156,14 @@ public class CacheObject {
      */
     private boolean server_fresh(Runner runner) throws IOException, BadPathnameException {
         int last_edit_time = get_server_edit_time(runner);
+        if (Constants.DEBUG) System.out.println("Checking server: our last known edit time is " + last_known_edit_time +
+                " and the server's last edit time is " + last_edit_time);
         if (last_known_edit_time == last_edit_time) {
-            if (Constants.DEBUG) System.out.println("Checking server: NO new updates");
+            if (Constants.DEBUG) System.out.println("-> fresh at server");
             return true;
         }
         else{
-            if (Constants.DEBUG) System.out.println("Checking server: new updates. Clearing cache");
+            if (Constants.DEBUG) System.out.println("-> not fresh at server");
             last_known_edit_time = last_edit_time;
             content = new HashMap<>();
             final_block = -1;
