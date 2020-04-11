@@ -27,7 +27,7 @@ public class Constants {
 
     // Services
     public static final String SERVICE_PROMPT =
-            "Please enter: 0 for exit, 1 for read, 2 for write, 3 for monitor, 4 for clear, 5 for trim, 8 for create file, 9 for remove file, 10 for list";
+            "Please enter: 0 for exit, 1 for read, 2 for write, 3 for monitor, 4 for clear, 5 for trim, 6 for edit time, 8 for create file, 9 for remove file, 10 for list";
     public static final int READ_ID = 1;
     public static final int WRITE_ID = 2;
     public static final int MONITOR_ID = 3;

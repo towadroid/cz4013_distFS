@@ -60,11 +60,17 @@ public abstract class Service {
         else if (service_id == Constants.TRIM_ID) {
             return new Trim(r);
         }
+        else if (service_id == Constants.EDIT_TIME_ID) {
+            return new EditTime(r);
+        }
         else if (service_id == Constants.CREATE_FILE_ID) {
             return new Create(r);
         }
         else if (service_id == Constants.REMOVE_FILE_ID) {
             return new Remove(r);
+        }
+        else if (service_id == Constants.LIST_ID) {
+            return new ListDir(r);
         }
         else {
             return null;
