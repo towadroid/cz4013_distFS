@@ -64,7 +64,7 @@ constexpr char help_text[] = "Distributed File System - server v1.0\n"
                              "\t\t\t\t\ttrace, debug, info, warn, error, critical, off\n"
                              "\t\t\t\tIf arg not provided, level is set to debug (default: info)\n"
                              "-s, --seed <arg>\t\tSet seed for random number generator used for simulating send failures.\n"
-                             "\t\t\t\tUse this option to get reproducable deterministic failure behaviour\n"
+                             "\t\t\t\tUse this option to get reproducible deterministic failure behaviour\n"
                              "\t\t\t\t(default: random)\n"
                              "-h, --help\t\t\tDisplay this help text";
 

@@ -7,8 +7,16 @@
 
 #include "../../Handler.hpp"
 
+using ::testing::_;
+using ::testing::Return;
+
 class MockHandler : public Handler {
 public:
+    MockHandler() : Handler() {
+        ON_CALL(*this, send_complete_message(_, _, _, _, _))
+                .WillByDefault((Return(true)));
+    } // https://stackoverflow.com/a/16553559/13147660
+
     MOCK_METHOD(bool, send_complete_message, (UdpServer_linux & server, unsigned char * raw_content_buf, size_t
             len, unsigned int
             requestID,
