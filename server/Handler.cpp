@@ -10,6 +10,7 @@
 #include <cstring> //for memcpy
 #include "spdlog/spdlog.h"
 #include "spdlog/fmt/bin_to_hex.h"
+#include "utils/logger_helper.hpp"
 
 using constants::Service_type;
 namespace fs = std::filesystem;
@@ -369,21 +370,25 @@ void Handler::receive_handle_message(UdpServer_linux &server, const int semantic
         }
     } while (cur_frag_no < fragments_expected);
 
-    spdlog::info("Received message #{} from {} with raw content size {}",
-                 requestID, utils::get_in_addr_port_str(client_address), overall_size);
-
     BytePtr raw_reply;
     unsigned int raw_reply_length, service_no;
     utils::unpack(raw_content.get(), service_no);
+
+    spdlog::info("Received message #{} from {} with raw content size {} bytes",
+                 requestID, utils::get_in_addr_port_str(client_address), overall_size);
+    utils::print_request(raw_content.get());
+
     service(constants::service_codes.at((int) service_no), server, raw_content.get(), raw_reply, raw_reply_length,
             client_address, 0);
 
     bool success = send_complete_message(server, raw_reply.get(), raw_reply_length, requestID, client_address);
     if (success)
-        spdlog::info("Reply for #{} sent to {}", requestID, utils::get_in_addr_port_str(client_address));
+        spdlog::info("Reply for #{} sent to {} with raw content size {} bytes",
+                     requestID, utils::get_in_addr_port_str(client_address), raw_reply_length);
     else
         spdlog::warn("Simulated failure: Reply for #{} not successfully sent to {}", requestID,
                      utils::get_in_addr_port_str(client_address));
+    utils::print_reply(service_no, raw_reply.get(), raw_reply_length);
 
     if (semantic == constants::ATMOST) {
         store_message(client_address, requestID, raw_reply, raw_reply_length);

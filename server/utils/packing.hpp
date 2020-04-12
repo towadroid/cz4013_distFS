@@ -8,7 +8,7 @@
 #include <string>
 #include <cstring>
 #include "../constants.hpp"
-#include "utils.hpp"
+//#include "utils.hpp"
 
 namespace internals {
     unsigned int calc_size();
