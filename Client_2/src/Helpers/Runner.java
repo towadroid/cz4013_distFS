@@ -71,17 +71,17 @@ public class Runner {
     public void close() throws IOException {
         if (Constants.AT_MOST_ONCE) {
             socket.setSoTimeout(Constants.TIMEOUT);
-            if (Constants.DEBUG) System.out.println("Begin acknowledging old replies");
+            if (Constants.DEBUG) System.out.println("(log) Begin acknowledging old replies");
             while(true) {
                 try {
                     Util.receive_message(request_id, this);
                 }
                 catch (SocketTimeoutException t) {
-                    if (Constants.DEBUG) System.out.println("Socket timeout; Done with cleanup");
+                    if (Constants.DEBUG) System.out.println("(log) Socket timeout; Done with cleanup");
                     break;
                 }
                 catch (CorruptMessageException c) {
-                    if (Constants.DEBUG) System.out.println("Throwing away corrupt message");
+                    if (Constants.DEBUG) System.out.println("(log) Throwing away corrupt message");
                 }
             }
         }

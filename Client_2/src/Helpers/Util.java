@@ -22,7 +22,7 @@ public class Util {
      * @throws ApplicationException BadPathnameException, BadRangeException, FilEmptyException
      */
     public static Map<String, Object> send_and_receive(int service_id, String[] values, Runner runner) throws IOException, ApplicationException {
-        if (Constants.DEBUG) System.out.println("Begin send/receive for service id " + service_id + ":");
+        if (Constants.DEBUG) System.out.println("(log) Begin send/receive for service id " + service_id + ":");
         runner.socket.setSoTimeout(Constants.TIMEOUT);
         List<Byte> reply_content;
         List<List<Byte>> request = Util.marshall(runner.get_request_id(), service_id, values);
@@ -33,11 +33,11 @@ public class Util {
                 break;
             }
             catch (SocketTimeoutException t) {
-                if (Constants.DEBUG) System.out.println("Socket timeout; Resending message");
+                if (Constants.DEBUG) System.out.println("(log) Socket timeout; Resending message");
                 Util.send_message(request, runner);
             }
             catch (CorruptMessageException c) {
-                if (Constants.DEBUG) System.out.println("Throwing away corrupt message");
+                if (Constants.DEBUG) System.out.println("(log) Throwing away corrupt message");
             }
         }
 
@@ -52,7 +52,7 @@ public class Util {
                 List<List<Byte>> ack = Util.marshall(runner.get_request_id(), Constants.ACKNOWLEDGMENT_ID, new String[0]);
                 Util.send_message(ack, runner);
             }
-            if (Constants.DEBUG) System.out.println("Finished send/receive for service id " + service_id + ".");
+            if (Constants.DEBUG) System.out.println("(log) Finished send/receive for service id " + service_id + ".");
             runner.increment_request_id();
         }
 
@@ -79,7 +79,7 @@ public class Util {
         for (List<Byte> packet : message) {
             runner.send_packet(packet);
         }
-        if (Constants.DEBUG) System.out.println("Message sent");
+        if (Constants.DEBUG) System.out.println("(log) Message sent");
     }
 
     /**Receive an entire message (which could contain many packets)
@@ -106,7 +106,7 @@ public class Util {
             // (hacky) blindly acknowledge old replies
             else if (Constants.AT_MOST_ONCE && receive_request_id < check_request_id) {
                 // send acknowledgment
-                if (Constants.DEBUG) System.out.println("Blindly acknowledging old request id " + receive_request_id);
+                if (Constants.DEBUG) System.out.println("(log) Blindly acknowledging old request id " + receive_request_id);
                 List<List<Byte>> ack = Util.marshall(receive_request_id, Constants.ACKNOWLEDGMENT_ID, new String[0]);
                 Util.send_message(ack, runner);
                 current_packet--;
@@ -119,7 +119,7 @@ public class Util {
             current_packet++;
         }
         all_content = all_content.subList(0, overall_content_size);
-        if (Constants.DEBUG) System.out.println("Message received");
+        if (Constants.DEBUG) System.out.println("(log) Message received");
         return all_content;
     }
 

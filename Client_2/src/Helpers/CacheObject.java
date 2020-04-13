@@ -77,7 +77,7 @@ public class CacheObject {
         }
         String last_piece = new_content.substring(end_block*Constants.FILE_BLOCK_SIZE);
         if (last_piece.length() != Constants.FILE_BLOCK_SIZE) {
-            if (Constants.DEBUG) System.out.println("Final block set to " + end_block);
+            if (Constants.DEBUG) System.out.println("(log) Final block set to " + end_block);
             final_block = end_block;
         }
         content.put(end_block, last_piece);
@@ -99,10 +99,10 @@ public class CacheObject {
         boolean must = !cached(offset, byte_count) || (!local_fresh(runner.freshness_interval) && !server_fresh(runner));
         if (Constants.DEBUG) {
             if (must) {
-                System.out.println("Must read from server");
+                System.out.println ("(log) Must read from server");
             }
             else {
-                System.out.println("No need to read from server");
+                System.out.println ("(log) No need to read from server");
             }
         }
         return must;
@@ -120,11 +120,11 @@ public class CacheObject {
         int end_block = get_end_block(offset, byte_count);
         for (int i = start_block; i <= end_block; i++) {
             if (!content.containsKey(i)) {
-                if (Constants.DEBUG) System.out.println("Checking cache: NOT cached");
+                if (Constants.DEBUG) System.out.println("(log) Checking cache: NOT cached");
                 return false;
             }
         }
-        if (Constants.DEBUG) System.out.println("Checking cache: cached");
+        if (Constants.DEBUG) System.out.println("(log) Checking cache: cached");
         return true;
     }
 
@@ -134,14 +134,14 @@ public class CacheObject {
     private boolean local_fresh(int freshness_interval) {
         long current_time = System.currentTimeMillis();
         boolean fresh =  current_time - server_checkin_time < freshness_interval;
-        if (Constants.DEBUG) System.out.println("Checking freshness locally: it is currently " + current_time +
+        if (Constants.DEBUG) System.out.println("(log) Checking freshness locally: it is currently " + current_time +
                 " and we last checked the server at time " + server_checkin_time);
         if (Constants.DEBUG) {
             if (fresh) {
-                System.out.println("-> fresh locally");
+                System.out.println("(log) -> fresh locally");
             }
             else {
-                System.out.println("-> not fresh locally");
+                System.out.println("(log) -> not fresh locally");
             }
         }
         return fresh;
@@ -156,14 +156,14 @@ public class CacheObject {
      */
     private boolean server_fresh(Runner runner) throws IOException, BadPathnameException {
         int last_edit_time = get_server_edit_time(runner);
-        if (Constants.DEBUG) System.out.println("Checking server: our last known edit time is " + last_known_edit_time +
+        if (Constants.DEBUG) System.out.println("(log) Checking server: our last known edit time is " + last_known_edit_time +
                 " and the server's last edit time is " + last_edit_time);
         if (last_known_edit_time == last_edit_time) {
-            if (Constants.DEBUG) System.out.println("-> fresh at server");
+            if (Constants.DEBUG) System.out.println("(log) -> fresh at server");
             return true;
         }
         else{
-            if (Constants.DEBUG) System.out.println("-> not fresh at server");
+            if (Constants.DEBUG) System.out.println("(log) -> not fresh at server");
             last_known_edit_time = last_edit_time;
             content = new HashMap<>();
             final_block = -1;
@@ -209,7 +209,6 @@ public class CacheObject {
      * @param byte_count number of bytes to read
      * @throws BadRangeException if the combo is indeed out of range
      */
-    // TODO: fix this
     private void check_range(int offset, int byte_count) throws BadRangeException {
         int end_block = get_end_block(offset, byte_count);
         if (offset < 0 ||

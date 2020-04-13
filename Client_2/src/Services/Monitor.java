@@ -54,7 +54,7 @@ public class Monitor extends Service {
                         System.out.println("Update: " + update.get("content"));
                     }
                     catch (CorruptMessageException c) {
-                        if (Constants.DEBUG) System.out.println("Received corrupt message; Throwing away");
+                        if (Constants.DEBUG) System.out.println("(log) Received corrupt message; Throwing away");
                     }
                 }
             }
