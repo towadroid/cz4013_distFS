@@ -234,13 +234,15 @@ void Handler::service_list_dir_content(unsigned char *message, BytePtr &raw_resu
     utils::unpack(message, path_string);
     try {
         std::vector<std::filesystem::path> content = utils::get_dir_content(constants::FILE_DIR_PATH);
-        result_length = utils::pack(raw_result, (unsigned int) content.size());
+        result_length = utils::pack(raw_result, constants::SUCCESS, (unsigned int) content.size());
         for (auto &it : content) {
+            BytePtr raw_result_copy = raw_result;
+            unsigned int result_length_copy = result_length;
             if (std::filesystem::is_directory(it))
-                result_length = utils::pack(raw_result, result_length, raw_result.get(), constants::IS_DIR,
+                result_length = utils::pack(raw_result, result_length_copy, raw_result_copy.get(), constants::IS_DIR,
                                             it.filename().string());
             else if (std::filesystem::is_regular_file(it))
-                result_length = utils::pack(raw_result, result_length, raw_result.get(), constants::IS_FILE,
+                result_length = utils::pack(raw_result, result_length_copy, raw_result_copy.get(), constants::IS_FILE,
                                             it.filename().string());
             else
                 throw std::runtime_error("Unknown file type!");

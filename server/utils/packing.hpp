@@ -47,18 +47,18 @@ namespace internals {
     template<typename T, typename... Rest>
     unsigned int pack(unsigned char *result, const T t, const Rest... rest);
 
-    unsigned int unpack(unsigned char *result, char &a);
+    unsigned char *unpack(unsigned char *result, char &a);
 
-    unsigned int unpack(unsigned char *result, int &a);
+    unsigned char *unpack(unsigned char *result, int &a);
 
-    unsigned int unpack(unsigned char *result, unsigned int &a);
+    unsigned char *unpack(unsigned char *result, unsigned int &a);
 
-    unsigned int unpack(unsigned char *result, std::string &a);
+    unsigned char *unpack(unsigned char *result, std::string &a);
 
     template<typename T, typename... Rest>
-    unsigned int unpack(unsigned char *result, T &t, Rest &... rest) {
-        unsigned int elem_size = unpack(result, t);
-        return unpack(result + elem_size, rest...);
+    unsigned char *unpack(unsigned char *result, T &t, Rest &... rest) {
+        unsigned char *new_result = unpack(result, t);
+        return unpack(new_result, rest...);
     }
 }
 
@@ -94,10 +94,11 @@ namespace utils {
      * @param result
      * @param t
      * @param rest
+     * @return pointing to the next byte after the processed ones
      */
     template<typename T, typename... Rest>
-    void unpack(unsigned char *result, T &t, Rest &... rest) {
-        internals::unpack(result, t, rest...);
+    unsigned char *unpack(unsigned char *result, T &t, Rest &... rest) {
+        return internals::unpack(result, t, rest...);
     }
 }
 

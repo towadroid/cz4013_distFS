@@ -8,6 +8,7 @@
  *      all operations can be executed successfully (always status=SUCCESS)
  */
 
+#include <spdlog/spdlog.h>
 #include "../test_resoures.hpp"
 
 
@@ -170,6 +171,33 @@ TEST(Handler_overall, last_mod_time) {
 
     EXPECT_CALL(mock_handler, send_complete_message(_, _, _, requestID, client1))
             .With(Args<1, 2>(ElementsAreArray(er_raw.get(), er_raw_len)));
+
+    mock_handler.receive_handle_message(mock_server, constants::ATLEAST);
+}
+
+TEST(Handler_overall, list_dir) {
+    MockHandler mock_handler;
+    MockUdpServer_linux mock_server;
+
+    spdlog::warn("Does not check actual result, "
+                 "only here to test if it runs and test print reply function for list_dir");
+
+    sockaddr_storage client1 = get_client(1);
+    unsigned int requestID = 0;
+
+    BytePtr raw1;
+    unsigned int raw1_len = utils::pack(raw1, 10, std::string("/"));
+
+    BytePtr inc_msg1;
+    unsigned int inc1_len = utils::pack(inc_msg1, requestID, raw1_len, 0, raw1_len, raw1.get());
+
+    EXPECT_CALL(mock_server, receive_msg_impl)
+            .WillOnce(DoAll(
+                    SetArrayArgument<0>(inc_msg1.get(), inc_msg1.get() + inc1_len),
+                    Return(inc1_len)));
+    EXPECT_CALL(mock_server, get_client_address).WillOnce(ReturnRef(client1));
+
+    EXPECT_CALL(mock_handler, send_complete_message(_, _, _, requestID, client1));
 
     mock_handler.receive_handle_message(mock_server, constants::ATLEAST);
 }

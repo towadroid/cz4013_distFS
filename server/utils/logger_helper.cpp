@@ -70,8 +70,7 @@ void utils::print_reply(unsigned int service_no, unsigned char *raw, unsigned in
     Service_type service_type = constants::service_codes.at((int) service_no);
     const std::string &service_name = constants::service_names.at(service_type);
     int status_no;
-    unpack(raw, status_no);
-    raw += 4;
+    raw = unpack(raw, status_no);
     const std::string &status_name = constants::status_constants.at(status_no);
     if (length == 4) {
         spdlog::info("Status no: {} ({})", status_no, status_name);
@@ -99,17 +98,20 @@ void utils::print_reply(unsigned int service_no, unsigned char *raw, unsigned in
         }
         case Service_type::list_dir: {
             int count;
-            unpack(raw, count);
+            raw = unpack(raw, count);
             auto entry_types = new int[count];
             auto entry_names = new std::string[count];
             std::string list_dir{};
             std::string type;
             for (int i = 0; i < count; ++i) {
+                raw = unpack(raw, entry_types[i], entry_names[i]);
                 type = entry_types[i] ? "file" : "dir";
                 list_dir += std::string("\nType: " + type + "\tName: " + entry_names[i]);
             }
-            spdlog::info("\nStatus: {} ({}]\n"
+            spdlog::info("\nStatus: {} ({})\n"
                          "Count: {}{}", status_no, status_name, count, list_dir);
+            delete[] entry_types;
+            delete[] entry_names;
             break;
         }
         default: {
