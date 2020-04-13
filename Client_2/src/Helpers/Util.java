@@ -158,7 +158,7 @@ public class Util {
 
         // hacky way of dealing with variable number of repetitions of parameters
         int repeat = 1;
-        if (params.get(0).getKey().equals("repeat")) {
+        if (params.size() > 0 && params.get(0).getKey().equals("repeat")) {
             repeat = bytes_to_int(raw_content.subList(counter, counter + Constants.INT_SIZE));
             counter += Constants.INT_SIZE;
             // remove the "repeat" parameter

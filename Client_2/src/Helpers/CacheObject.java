@@ -216,7 +216,7 @@ public class CacheObject {
             byte_count < 0 ||
             (final_block != -1 && final_block == end_block &&
                 (offset+byte_count) % Constants.FILE_BLOCK_SIZE > content.get(end_block).length()) ||
-            (final_block != -1 && final_block > end_block))
+            (final_block != -1 && end_block > final_block))
         {
             throw new BadRangeException();
         }
