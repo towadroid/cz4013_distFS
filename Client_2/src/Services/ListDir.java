@@ -25,17 +25,22 @@ public class ListDir extends Service {
             Map<String, Object> reply = send_and_receive(request_values);
             int repeat = (int) reply.get("repeat");
             for (int i = 0; i < repeat; i++) {
-                String type_key = "type " + i;
-                String name_key = "name " + i;
+                String type_key = "type";
+                String name_key = "name";
+                if (repeat > 1) {
+                    type_key += " " + i;
+                    name_key += " " + i;
+                }
+
                 String type = "";
                 if ((int) reply.get(type_key) == 1) {
-                    type = "(directory)";
+                    type = "dir: ";
                 }
                 else{
-                    type = "(file)";
+                    type = "file:";
                 }
                 String name = (String) reply.get(name_key);
-                System.out.println(name + " " + type);
+                System.out.println(type + " " + name);
             }
             System.out.println("Done.");
         }
