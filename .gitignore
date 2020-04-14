@@ -1,1 +1,4 @@
 client/bin
+client/.idea
+client/out
+client/client.iml
