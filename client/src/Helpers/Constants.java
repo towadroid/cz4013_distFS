@@ -21,9 +21,7 @@ public class Constants {
 
     // Basic settings
     public static final int TIMEOUT = 5000;
-    public static final boolean AT_MOST_ONCE = false;
     public static final boolean DEBUG = true;
-    public static final double NETWORK_FAILURE_RATE = 0.0;
 
     // Services
     public static final String SERVICE_PROMPT =

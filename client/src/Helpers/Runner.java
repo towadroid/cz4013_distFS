@@ -17,9 +17,13 @@ public class Runner {
     public InetAddress host;
     public DatagramSocket socket;
     public HashMap<String, CacheObject> cache;
-    public int freshness_interval;
-    private int request_id = 0;
+
     private int server_port;
+    private int request_id = 0;
+
+    public int freshness_interval;
+    public boolean at_most_once;
+    public double network_failure_rate;
 
     /**
      * @param s_name server name
@@ -27,13 +31,16 @@ public class Runner {
      * @throws UnknownHostException
      * @throws SocketException
      */
-    public Runner(String s_name, int s_port, int f_interval) throws UnknownHostException, SocketException {
+    public Runner(Scanner s, String s_name, int s_port, int amo, double nfr, int f_interval)
+            throws UnknownHostException, SocketException {
         socket = new DatagramSocket();
-        scanner = new Scanner(System.in);
+        scanner = s;
         server_port = s_port;
         host = InetAddress.getByName(s_name);
         cache = new HashMap<>();
         freshness_interval = f_interval;
+        at_most_once = amo == 1;
+        network_failure_rate = nfr;
     }
 
     /**Send one packet to the server
@@ -46,7 +53,7 @@ public class Runner {
         DatagramPacket request = new DatagramPacket(packet,
                 packet.length, host, server_port);
         double random = Math.random();
-        if (random >= Constants.NETWORK_FAILURE_RATE) {
+        if (random >= network_failure_rate) {
             socket.send(request);
         }
         else if (Constants.DEBUG) {
@@ -69,7 +76,7 @@ public class Runner {
      * @throws IOException from receiving packet
      */
     public void close() throws IOException {
-        if (Constants.AT_MOST_ONCE) {
+        if (at_most_once) {
             socket.setSoTimeout(Constants.TIMEOUT);
             if (Constants.DEBUG) System.out.println("(log) Begin acknowledging old replies");
             while(true) {

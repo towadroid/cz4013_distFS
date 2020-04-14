@@ -46,7 +46,7 @@ public class Util {
             return reply;
         }
         finally {
-            if (Constants.AT_MOST_ONCE) {
+            if (runner.at_most_once) {
                 // upon receiving, send acknowledgment
                 System.out.print("(acknowledgment) ");
                 List<List<Byte>> ack = Util.marshall(runner.get_request_id(), Constants.ACKNOWLEDGMENT_ID, new String[0]);
@@ -104,7 +104,7 @@ public class Util {
                 throw new CorruptMessageException();
             }
             // (hacky) blindly acknowledge old replies
-            else if (Constants.AT_MOST_ONCE && receive_request_id < check_request_id) {
+            else if (runner.at_most_once && receive_request_id < check_request_id) {
                 // send acknowledgment
                 if (Constants.DEBUG) System.out.println("(log) Blindly acknowledging old request id " + receive_request_id);
                 List<List<Byte>> ack = Util.marshall(receive_request_id, Constants.ACKNOWLEDGMENT_ID, new String[0]);
