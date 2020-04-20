@@ -233,7 +233,7 @@ void Handler::service_list_dir_content(unsigned char *message, BytePtr &raw_resu
     std::string path_string;
     utils::unpack(message, path_string);
     try {
-        std::vector<std::filesystem::path> content = utils::get_dir_content(constants::FILE_DIR_PATH);
+        std::vector<std::filesystem::path> content = utils::get_dir_content(constants::FILE_DIR_PATH + path_string);
         result_length = utils::pack(raw_result, constants::SUCCESS, (unsigned int) content.size());
         for (auto &it : content) {
             BytePtr raw_result_copy = raw_result;

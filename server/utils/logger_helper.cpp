@@ -105,7 +105,7 @@ void utils::print_reply(unsigned int service_no, unsigned char *raw, unsigned in
             std::string type;
             for (int i = 0; i < count; ++i) {
                 raw = unpack(raw, entry_types[i], entry_names[i]);
-                type = entry_types[i] ? "file" : "dir";
+                type = entry_types[i] ? "dir" : "file";
                 list_dir += std::string("\nType: " + type + "\tName: " + entry_names[i]);
             }
             spdlog::info("\nStatus: {} ({})\n"
