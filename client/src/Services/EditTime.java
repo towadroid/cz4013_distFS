@@ -23,6 +23,7 @@ public class EditTime extends Service {
         String[] request_values = get_user_request_values();
         try{
             Map<String, Object> reply = send_and_receive(request_values);
+            System.out.println("Edit time:");
             System.out.println((int) reply.get("time"));
             System.out.println("Done.");
         }

@@ -40,6 +40,7 @@ public class Read extends  Service {
 
             // either way, get the content from the cache
             String content = cache_object.get_cache(offset, byte_count);
+            System.out.println("Content:");
             System.out.println(content);
             System.out.println("Done.");
         }
